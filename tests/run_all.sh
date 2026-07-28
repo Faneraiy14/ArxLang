@@ -10,8 +10,8 @@
 # для них помилка це і є успіх, а її ВІДСУТНІСТЬ — провал.
 # ============================================================
 
-EXE="${ARX_EXE:-C:/Projects/ArxEcosystem/src/ArxLang/bin/Debug/net10.0-windows/ArxLang.exe}"
 TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+EXE="${ARX_EXE:-$TESTS_DIR/../src/ArxLang/bin/Debug/net10.0-windows/ArxLang.exe}"
 
 # Відкривають вікна або чекають на ввід — у автоматичному прогоні пропускаємо.
 SKIP="test_graphics2d.arx test_graphics3d.arx calculator.arx"

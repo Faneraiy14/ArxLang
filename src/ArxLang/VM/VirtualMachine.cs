@@ -211,6 +211,18 @@ public class VirtualMachine
         _nativeFunctions["contains"] = args => (args[0]?.ToString() ?? "").Contains(args[1]?.ToString() ?? "");
         _nativeFunctions["startsWith"] = args => (args[0]?.ToString() ?? "").StartsWith(args[1]?.ToString() ?? "");
         _nativeFunctions["endsWith"] = args => (args[0]?.ToString() ?? "").EndsWith(args[1]?.ToString() ?? "");
+        _nativeFunctions["trim"] = args => (args[0]?.ToString() ?? "").Trim();
+        _nativeFunctions["repeat"] = args => string.Concat(Enumerable.Repeat(args[0]?.ToString() ?? "", TruncToInt(args[1])));
+        _nativeFunctions["indexOf"] = args => {
+            if (args[0] is List<object> arr) return (double)arr.FindIndex(item => ValuesEqual(item, args[1]));
+            return (double)(args[0]?.ToString() ?? "").IndexOf(args[1]?.ToString() ?? "");
+        };
+        _nativeFunctions["reverse"] = args => {
+            if (args[0] is List<object> arr) { var copy = new List<object>(arr); copy.Reverse(); return copy; }
+            var chars = (args[0]?.ToString() ?? "").ToCharArray();
+            Array.Reverse(chars);
+            return new string(chars);
+        };
         _nativeFunctions["split"] = args => {
             string s = args[0]?.ToString() ?? "";
             string sep = args[1]?.ToString() ?? "";
@@ -252,6 +264,18 @@ public class VirtualMachine
             var list = (List<object>)args[0];
             list.Clear();
             return null;
+        };
+        _nativeFunctions["slice"] = args => {
+            var list = (List<object>)args[0];
+            int start = Math.Clamp(TruncToInt(args[1]), 0, list.Count);
+            int end = args.Length > 2 ? Math.Clamp(TruncToInt(args[2]), start, list.Count) : list.Count;
+            return list.GetRange(start, end - start);
+        };
+        _nativeFunctions["unique"] = args => {
+            var list = (List<object>)args[0];
+            var result = new List<object>();
+            foreach (var item in list) if (!result.Any(x => ValuesEqual(x, item))) result.Add(item);
+            return result;
         };
 
         // File I/O

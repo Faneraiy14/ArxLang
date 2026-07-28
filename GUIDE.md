@@ -172,7 +172,11 @@ closeCanvas(canvas)
 - `toString(v)`, `toInt(v)`, `toDouble(v)`, `typeOf(v)`, `isNumber/isString/isArray/isBool(v)` - перетворення та перевірка типів
 - `charCode(s)` - код першого символу рядка (наприклад, `charCode("A")` -> 65); `fromCharCode(code)` - символ за кодом
 - `len(v)`, `substring(s,start,len)`, `replace/toUpper/toLower/contains/startsWith/endsWith(s,...)`, `split(s,sep)`, `join(arr,sep)` - рядки
+- `trim(s)` - прибирає пробіли з обох боків; `repeat(s,n)` - повторює рядок n разів
+- `indexOf(v,item)` - позиція елемента/підрядка (-1, якщо нема); працює і для рядків, і для масивів
+- `reverse(v)` - розвертає рядок або масив (оригінальний масив не змінює)
 - `append(arr,v)`, `pop(arr)`, `insert(arr,i,v)`, `removeAt(arr,i)`, `clear(arr)` - масиви
+- `slice(arr,start,end?)` - підмасив від start до end (або до кінця); `unique(arr)` - прибирає дублікати, лишає порядок
 - `newMap()`, `mapSet(m,k,v)`, `mapGet(m,k)`, `mapHas(m,k)`, `mapRemove(m,k)`, `mapKeys(m)`, `mapValues(m)` - мапи/словники
 - `sort(arr,cmp)`, `mapArr(arr,fn)`, `filter(arr,fn)`, `reduce(arr,fn,init)` - функції вищого порядку над масивами
 - `toJson(v)`, `fromJson(str)` - серіалізація в JSON і назад

@@ -1,0 +1,51 @@
+// Нові функції стандартної бібліотеки: trim, repeat, indexOf, reverse,
+// slice, unique. Додано, бо в базовій бібліотеці не було навіть
+// звичайного обрізання пробілів чи розвороту рядка/масиву.
+
+func main() {
+    print("1. trim() прибирає пробіли з обох боків")
+    if trim("  привіт  ") == "привіт" { print("  ок") } else { print("  ПРОВАЛ") }
+
+    print("2. repeat() повторює рядок n разів")
+    if repeat("ab", 3) == "ababab" { print("  ок") } else { print("  ПРОВАЛ") }
+    if repeat("x", 0) == "" { print("  ок") } else { print("  ПРОВАЛ") }
+
+    print("3. indexOf() для рядка")
+    if indexOf("привіт світ", "світ") == 7 { print("  ок") } else { print("  ПРОВАЛ") }
+    if indexOf("привіт", "xyz") == -1 { print("  ок") } else { print("  ПРОВАЛ") }
+
+    print("4. indexOf() для масиву")
+    var arr = [10, 20, 30]
+    if indexOf(arr, 20) == 1 { print("  ок") } else { print("  ПРОВАЛ") }
+    if indexOf(arr, 99) == -1 { print("  ок") } else { print("  ПРОВАЛ") }
+
+    print("5. reverse() для рядка")
+    if reverse("abcd") == "dcba" { print("  ок") } else { print("  ПРОВАЛ") }
+
+    print("6. reverse() для масиву (не змінює оригінал)")
+    var original = [1, 2, 3]
+    var rev = reverse(original)
+    if rev[0] == 3 { print("  ок") } else { print("  ПРОВАЛ") }
+    if original[0] == 1 { print("  ок (оригінал не зіпсовано)") } else { print("  ПРОВАЛ") }
+
+    print("7. slice() вирізає підмасив")
+    var s = [1, 2, 3, 4, 5]
+    var part = slice(s, 1, 3)
+    if len(part) == 2 { print("  ок") } else { print("  ПРОВАЛ") }
+    if part[0] == 2 { print("  ок") } else { print("  ПРОВАЛ") }
+
+    print("8. slice() без другого аргументу — до кінця")
+    var tail = slice(s, 3)
+    if len(tail) == 2 { print("  ок") } else { print("  ПРОВАЛ") }
+
+    print("9. unique() прибирає дублікати, лишає порядок")
+    var withDupes = [1, 2, 2, 3, 1, 4]
+    var uniq = unique(withDupes)
+    if len(uniq) == 4 { print("  ок") } else { print("  ПРОВАЛ") }
+    if uniq[0] == 1 { print("  ок") } else { print("  ПРОВАЛ") }
+    if uniq[3] == 4 { print("  ок") } else { print("  ПРОВАЛ") }
+
+    print("ГОТОВО")
+}
+
+main()

@@ -21,6 +21,17 @@ public class Compiler
     // оскільки він лежить у таблиці констант як живий об'єкт.
     private readonly List<(ArxFunctionRef Ref, string FunctionName)> _pendingFunctionRefs = new();
 
+    // break/continue: на момент компіляції тіла циклу адреса його кінця ще
+    // невідома, тому позиції переходів запам'ятовуються і патчаться, коли
+    // цикл скомпільовано повністю. Стек — бо цикли бувають вкладені, і
+    // break має вести з НАЙБЛИЖЧОГО циклу.
+    private class LoopContext
+    {
+        public List<int> BreakJumps = new();     // патчаться на адресу після циклу
+        public List<int> ContinueJumps = new();  // патчаться на адресу наступної ітерації
+    }
+    private readonly Stack<LoopContext> _loops = new();
+
     private static readonly HashSet<string> _builtins = new()
     {
         "print", "printNoNewLine",
@@ -233,9 +244,19 @@ public class Compiler
                 CompileExpression(w.Condition);
                 _bytecode.Emit(OpCode.JUMP_IF_FALSE, 0);
                 int jumpPos2 = _bytecode.Code.Count - 2;
+
+                _loops.Push(new LoopContext());
                 CompileStatement(w.Body);
+                var whileLoop = _loops.Pop();
+
+                // continue у while веде на перевірку умови
+                foreach (var pos in whileLoop.ContinueJumps) PatchJumpTo(pos, startPos);
+
                 _bytecode.Emit(OpCode.JUMP, startPos);
                 PatchJump(jumpPos2);
+
+                // break веде сюди — одразу за цикл
+                foreach (var pos in whileLoop.BreakJumps) PatchJump(pos);
                 break;
             case ForStatement f when f.End == null:
                 {
@@ -264,7 +285,14 @@ public class Compiler
                     _bytecode.Emit(OpCode.ARRAY_GET);
                     _bytecode.Emit(OpCode.STORE_VAR, _vars[f.VariableName]);
 
+                    _loops.Push(new LoopContext());
                     CompileStatement(f.Body);
+                    var forEachLoop = _loops.Pop();
+
+                    // continue має пропустити решту тіла, але ОБОВ'ЯЗКОВО
+                    // виконати збільшення індексу — інакше цикл зациклиться.
+                    int incrPos = _bytecode.Code.Count;
+                    foreach (var pos in forEachLoop.ContinueJumps) PatchJumpTo(pos, incrPos);
 
                     _bytecode.Emit(OpCode.LOAD_VAR, idxSlot);
                     _bytecode.Emit(OpCode.LOAD_CONST, _bytecode.AddConstant(1.0));
@@ -273,6 +301,7 @@ public class Compiler
                     _bytecode.Emit(OpCode.JUMP, arrLoopStart);
 
                     PatchJump(arrEndJump);
+                    foreach (var pos in forEachLoop.BreakJumps) PatchJump(pos);
                 }
                 break;
             case ForStatement f:
@@ -287,7 +316,13 @@ public class Compiler
                 _bytecode.Emit(OpCode.JUMP_IF_FALSE, 0);
                 int forJump = _bytecode.Code.Count - 2;
 
+                _loops.Push(new LoopContext());
                 CompileStatement(f.Body);
+                var forLoop = _loops.Pop();
+
+                // Так само, як у for-in: continue стрибає на збільшення лічильника.
+                int forIncrPos = _bytecode.Code.Count;
+                foreach (var pos in forLoop.ContinueJumps) PatchJumpTo(pos, forIncrPos);
 
                 _bytecode.Emit(OpCode.LOAD_VAR, _vars[f.VariableName]);
                 _bytecode.Emit(OpCode.LOAD_CONST, _bytecode.AddConstant(1));
@@ -296,6 +331,7 @@ public class Compiler
                 _bytecode.Emit(OpCode.JUMP, forStart);
 
                 PatchJump(forJump);
+                foreach (var pos in forLoop.BreakJumps) PatchJump(pos);
                 break;
             case BlockStatement b:
                 foreach (var s in b.Statements) CompileStatement(s);
@@ -329,6 +365,18 @@ public class Compiler
                     PatchJump(jumpOverCatchPos);
                 }
                 break;
+            case BreakStatement:
+                if (_loops.Count == 0)
+                    throw new Exception("'break' можна використовувати лише всередині циклу");
+                _bytecode!.Emit(OpCode.JUMP, 0);
+                _loops.Peek().BreakJumps.Add(_bytecode.Code.Count - 2);
+                break;
+            case ContinueStatement:
+                if (_loops.Count == 0)
+                    throw new Exception("'continue' можна використовувати лише всередині циклу");
+                _bytecode!.Emit(OpCode.JUMP, 0);
+                _loops.Peek().ContinueJumps.Add(_bytecode.Code.Count - 2);
+                break;
             case ThrowStatement th:
                 CompileExpression(th.Value);
                 _bytecode!.Emit(OpCode.THROW);
@@ -338,8 +386,14 @@ public class Compiler
 
     private void PatchJump(int pos)
     {
-        int target = _bytecode!.Code.Count;
-        _bytecode.Code[pos] = (byte)(target & 0xFF);
+        PatchJumpTo(pos, _bytecode!.Code.Count);
+    }
+
+    // Патч на КОНКРЕТНУ адресу, а не на поточний кінець коду: потрібно для
+    // continue, який стрибає назад — на збільшення лічильника або на умову.
+    private void PatchJumpTo(int pos, int target)
+    {
+        _bytecode!.Code[pos] = (byte)(target & 0xFF);
         _bytecode.Code[pos + 1] = (byte)((target >> 8) & 0xFF);
     }
 

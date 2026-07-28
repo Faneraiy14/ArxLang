@@ -10,7 +10,29 @@ func isDigit(c) {
 
 func isAlpha(c) {
     var code = charCode(c)
-    return (code >= 65 && code <= 90) || (code >= 97 && code <= 122) || code == 95
+    if (code >= 65 && code <= 90) || (code >= 97 && code <= 122) || code == 95 {
+        return true
+    }
+    // Кирилиця: сам хост приймає її в іменах (char.IsLetter у Lexer.cs),
+    // тому самохост має поводитись так само — інакше та сама програма
+    // працює під хостом і ламається під самохостом.
+    // А-я = 1040..1103, ё/Ё = 1025/1105, українські ґєіїҐЄІЇ = 1028..1111.
+    if code >= 1040 && code <= 1103 {
+        return true
+    }
+    if code == 1025 || code == 1105 {
+        return true
+    }
+    if code >= 1028 && code <= 1031 {
+        return true
+    }
+    if code >= 1108 && code <= 1111 {
+        return true
+    }
+    if code == 1168 || code == 1169 {
+        return true
+    }
+    return false
 }
 
 func isAlphaNum(c) {

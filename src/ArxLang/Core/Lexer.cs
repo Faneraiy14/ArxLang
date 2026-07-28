@@ -10,6 +10,7 @@ public class Lexer
     private readonly HashSet<string> _keywords = new()
     {
         "func", "var", "if", "else", "while", "for", "return",
+        "break", "continue",
         "true", "false", "null", "print", "in",
         "struct", "self", "import",
         "try", "catch", "throw",

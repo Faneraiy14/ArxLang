@@ -177,6 +177,19 @@ public class ImportStatement : StatementNode
     public override string ToString(int indent = 0) => new string(' ', indent) + $"Import: {Path}";
 }
 
+// break / continue — виходять з найближчого циклу або переходять до його
+// наступної ітерації. Значень не мають, тому вузли порожні: уся робота
+// відбувається в компіляторі, який знає адреси поточного циклу.
+public class BreakStatement : StatementNode
+{
+    public override string ToString(int indent = 0) => new string(' ', indent) + "Break";
+}
+
+public class ContinueStatement : StatementNode
+{
+    public override string ToString(int indent = 0) => new string(' ', indent) + "Continue";
+}
+
 public class ThrowStatement : StatementNode
 {
     public ExpressionNode Value { get; }

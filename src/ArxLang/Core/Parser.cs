@@ -43,9 +43,23 @@ public class Parser
             TokenType.Keyword when token.Value == "try" => ParseTryStatement(),
             TokenType.Keyword when token.Value == "throw" => ParseThrowStatement(),
             TokenType.Keyword when token.Value == "import" => ParseImportStatement(),
+            TokenType.Keyword when token.Value == "break" => ParseBreakStatement(),
+            TokenType.Keyword when token.Value == "continue" => ParseContinueStatement(),
             TokenType.Punctuation when token.Value == "{" => ParseBlockStatement(),
             _ => ParseExpressionStatement()
         };
+    }
+
+    private BreakStatement ParseBreakStatement()
+    {
+        Advance(); // 'break'
+        return new BreakStatement();
+    }
+
+    private ContinueStatement ParseContinueStatement()
+    {
+        Advance(); // 'continue'
+        return new ContinueStatement();
     }
 
     private TryStatement ParseTryStatement()
@@ -228,20 +242,12 @@ public class Parser
     private IfStatement ParseIfStatement()
     {
         Advance();
-        bool hasParens = false;
-        if (Peek().Type == TokenType.Punctuation && Peek().Value == "(")
-        {
-            Advance();
-            hasParens = true;
-        }
-        
+        // Дужки навколо умови не обробляються окремо: ParseExpression сам
+        // розуміє їх як групування. Спецобробка ламала умови, що ПОЧИНАЮТЬСЯ
+        // з дужки, але нею не вичерпуються: if (a) || (b) { } — вона з'їдала
+        // "(a)" і одразу вимагала "{", натикаючись на "||".
         var cond = ParseExpression();
-        
-        if (hasParens)
-        {
-            Consume(TokenType.Punctuation, "Очікується ')'");
-        }
-        
+
         var thenBlock = ParseBlockStatement();
         BlockStatement? elseBlock = null;
         if (Peek().Type == TokenType.Keyword && Peek().Value == "else")
@@ -264,20 +270,9 @@ public class Parser
     private WhileStatement ParseWhileStatement()
     {
         Advance();
-        bool hasParens = false;
-        if (Peek().Type == TokenType.Punctuation && Peek().Value == "(")
-        {
-            Advance();
-            hasParens = true;
-        }
-        
+        // Те саме, що й у if: дужки — звичайне групування у виразі.
         var cond = ParseExpression();
-        
-        if (hasParens)
-        {
-            Consume(TokenType.Punctuation, "Очікується ')'");
-        }
-        
+
         var body = ParseBlockStatement();
         return new WhileStatement(cond, body);
     }

@@ -18,6 +18,7 @@ public enum OpCode : byte
     CALL_NATIVE, CALL_METHOD,
     TRY_BEGIN, TRY_END, THROW,
     MAKE_CLOSURE, CALL_VALUE,
+    GET_GLOBAL, SET_GLOBAL,
     POP,
     HALT
 }

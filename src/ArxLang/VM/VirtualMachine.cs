@@ -27,6 +27,13 @@ public class VirtualMachine
     private readonly Stack<Dictionary<int, object>> _frameStack = new();
     private readonly Stack<int> _callStack = new();
 
+    // Глобальні змінні (var на верхньому рівні файлу) — окреме сховище за
+    // ІМЕНЕМ, а не за номером слота. Слоти _currentFrame нумеруються окремо
+    // для кожної функції (Compiler.cs скидає _varCounter=0 при вході в
+    // FunctionDeclaration), тому спільний слот для глобальних не спрацював
+    // би: два різні виклики просто не бачили б одне значення.
+    private readonly Dictionary<string, object> _globals = new();
+
     // try/catch: кожен активний try запам'ятовує, куди стрибнути і до якої
     // глибини стеку/фреймів/викликів відкотитись, якщо всередині нього
     // станеться помилка (як явний throw, так і внутрішня помилка VM).
@@ -417,6 +424,18 @@ public class VirtualMachine
                     _stack.Push(_currentFrame.TryGetValue(idx, out var v) ? v : 0);
                     break;
                 case OpCode.STORE_VAR: _currentFrame[ReadInt16()] = _stack.Pop(); break;
+                case OpCode.GET_GLOBAL:
+                    {
+                        var name = (string)_constants[ReadInt16()];
+                        _stack.Push(_globals.TryGetValue(name, out var gv) ? gv : 0);
+                    }
+                    break;
+                case OpCode.SET_GLOBAL:
+                    {
+                        var name = (string)_constants[ReadInt16()];
+                        _globals[name] = _stack.Pop();
+                    }
+                    break;
                 case OpCode.CALL:
                     int addr = ReadInt16();
                     _callStack.Push(_ip);

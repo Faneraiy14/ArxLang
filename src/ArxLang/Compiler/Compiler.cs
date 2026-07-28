@@ -32,6 +32,18 @@ public class Compiler
     }
     private readonly Stack<LoopContext> _loops = new();
 
+    // Глобальні var (верхній рівень файлу). Заповнюється ПЕРЕД компіляцією
+    // тіл функцій, щоб функція, оголошена ДЕ ЗАВГОДНО у файлі, бачила
+    // глобальну змінну — незалежно від того, до чи після неї в тексті
+    // ця змінна написана. Компілюються через GET_GLOBAL/SET_GLOBAL (за
+    // іменем, не за номером слота): у функцій свій _varCounter з нуля,
+    // тому спільного номера слота для глобальних просто не існує.
+    private readonly HashSet<string> _globalNames = new();
+    // true лише поки компілюється код верхнього рівня файлу (не всередині
+    // жодної func) — саме там var повинен ставати ГЛОБАЛЬНИМ, а не
+    // локальною змінною поточної (відсутньої) функції.
+    private bool _atTopLevel;
+
     private static readonly HashSet<string> _builtins = new()
     {
         "print", "printNoNewLine",
@@ -65,6 +77,13 @@ public class Compiler
         // Реєструємо всі функції (включаючи вкладені) перед компіляцією
         RegisterFunctions(program.Statements);
 
+        // Імена глобальних var — ПЕРЕД компіляцією тіл функцій. Інакше
+        // функція, оголошена перед глобальною змінною в тексті файлу, не
+        // "бачила" би цю змінну взагалі: CompileFunctions компілює ВСІ тіла
+        // одним проходом раніше, ніж top-level var (нижче в цьому методі).
+        foreach (var stmt in program.Statements)
+            if (stmt is VariableDeclaration v) _globalNames.Add(v.Name);
+
         // Emit JUMP to skip function definitions
         _bytecode.Emit(OpCode.JUMP, 0);
         int skipJump = _bytecode.Code.Count - 2;
@@ -72,7 +91,23 @@ public class Compiler
         // Компілюємо тіла функцій
         CompileFunctions(program.Statements);
 
-        // Тепер усі функції мають реальні адреси — патчимо відкладені виклики
+        PatchJump(skipJump);
+
+        // Глобальні інструкції
+        _atTopLevel = true;
+        foreach (var stmt in program.Statements)
+        {
+            if (!(stmt is FunctionDeclaration))
+                CompileStatement(stmt);
+        }
+        _atTopLevel = false;
+
+        // Патчимо відкладені виклики ПІСЛЯ компіляції геть усього, а не
+        // лише тіл функцій. Раніше виклик іменованої функції ПРЯМО З КОДУ
+        // ВЕРХНЬОГО РІВНЯ (напр. просто "main()" унизу файлу) компілювався
+        // вже ПІСЛЯ цього патчингу — CALL лишався з адресою-заглушкою 0,
+        // тобто стрибав на початок байткоду (сам JUMP, що пропускає тіла
+        // функцій) і програма зациклювалась навіки, замовчуючи все.
         foreach (var (pos, name) in _pendingCalls)
         {
             int target = _functions[name];
@@ -82,15 +117,6 @@ public class Compiler
         foreach (var (fref, name) in _pendingFunctionRefs)
         {
             fref.Address = _functions[name];
-        }
-
-        PatchJump(skipJump);
-
-        // Глобальні інструкції
-        foreach (var stmt in program.Statements)
-        {
-            if (!(stmt is FunctionDeclaration))
-                CompileStatement(stmt);
         }
 
         // Автоматичний виклик main(), якщо він є і немає глобального коду, або просто для зручності
@@ -191,7 +217,13 @@ public class Compiler
     {
         foreach (var stmt in program.Statements)
         {
-            if (!(stmt is FunctionDeclaration) && !(stmt is StructDeclaration))
+            // VariableDeclaration - це ОГОЛОШЕННЯ глобальної константи, а не
+            // виконуваний код: "var MAX = 100" перед func main() не повинен
+            // скасовувати автовиклик main(). Без цього винятку будь-яка
+            // глобальна змінна робила auto-call неможливим, а явний виклик
+            // main() з коду верхнього рівня — єдина альтернатива - раніше
+            // зациклював програму (окрема причина, вже виправлена вище).
+            if (!(stmt is FunctionDeclaration) && !(stmt is StructDeclaration) && !(stmt is VariableDeclaration))
                 return true;
         }
         return false;
@@ -225,8 +257,18 @@ public class Compiler
             case VariableDeclaration v:
                 if (v.Initializer != null) CompileExpression(v.Initializer);
                 else _bytecode!.Emit(OpCode.LOAD_CONST, _bytecode.AddConstant(0));
-                _vars[v.Name] = _varCounter++;
-                _bytecode!.Emit(OpCode.STORE_VAR, _vars[v.Name]);
+                if (_atTopLevel)
+                {
+                    // Верхній рівень файлу -> глобальна змінна: за іменем,
+                    // не за номером слота (у кожної функції власна нумерація
+                    // з нуля, спільного слота для глобальних не існує).
+                    _bytecode!.Emit(OpCode.SET_GLOBAL, _bytecode.AddConstant(v.Name));
+                }
+                else
+                {
+                    _vars[v.Name] = _varCounter++;
+                    _bytecode!.Emit(OpCode.STORE_VAR, _vars[v.Name]);
+                }
                 break;
             case IfStatement i:
                 CompileExpression(i.Condition);
@@ -407,6 +449,8 @@ public class Compiler
             case VariableExpression v:
                 if (_vars.TryGetValue(v.Name, out int varIdx))
                     _bytecode!.Emit(OpCode.LOAD_VAR, varIdx);
+                else if (_globalNames.Contains(v.Name))
+                    _bytecode!.Emit(OpCode.GET_GLOBAL, _bytecode.AddConstant(v.Name));
                 else if (_builtins.Contains(v.Name))
                 {
                     // Посилання на НАТИВНУ функцію як значення (напр. var f = sqrt).
@@ -436,6 +480,8 @@ public class Compiler
                         CompileExpression(b.Right);
                         if (_vars.TryGetValue(varExpr.Name, out int varIdx2))
                             _bytecode!.Emit(OpCode.STORE_VAR, varIdx2);
+                        else if (_globalNames.Contains(varExpr.Name))
+                            _bytecode!.Emit(OpCode.SET_GLOBAL, _bytecode.AddConstant(varExpr.Name));
                         else
                             throw new Exception($"Змінна '{varExpr.Name}' не оголошена");
                     }
@@ -604,6 +650,11 @@ public class Compiler
 
                     var oldVars = new Dictionary<string, int>(_vars); // успадковуємо, НЕ обнуляємо
                     int oldVarCounter = _varCounter; // продовжуємо нумерацію, щоб не зіткнутися з видимими слотами
+                    // Тіло лямбди — власна локальна область, навіть якщо саму
+                    // лямбду створено на верхньому рівні файлу: var усередині
+                    // fn.Body не повинен ставати глобальним.
+                    bool oldAtTopLevel = _atTopLevel;
+                    _atTopLevel = false;
 
                     for (int j = fn.Parameters.Count - 1; j >= 0; j--)
                     {
@@ -619,6 +670,7 @@ public class Compiler
 
                     _vars = oldVars;
                     _varCounter = oldVarCounter;
+                    _atTopLevel = oldAtTopLevel;
 
                     PatchJump(skipPos);
 

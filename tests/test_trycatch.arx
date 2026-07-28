@@ -1,0 +1,48 @@
+func riskyDivide(a, b) {
+    if b == 0 {
+        throw "Ділення на нуль!"
+    }
+    return a / b
+}
+
+func main() {
+    // 1. Явний throw, перехоплений catch
+    try {
+        var r = riskyDivide(10, 0)
+        print("не мало дійти сюди")
+    } catch (e) {
+        print("Спіймано: " + e)
+    }
+
+    // 2. Внутрішня помилка VM (вихід за межі масиву), перехоплена catch
+    try {
+        var arr = [1, 2, 3]
+        var bad = arr[99]
+        print("не мало дійти сюди")
+    } catch (e) {
+        print("Спіймано помилку масиву: " + toString(len(e) > 0))
+    }
+
+    // 3. Успішний try — catch не виконується
+    try {
+        var ok = riskyDivide(10, 2)
+        print("Успіх: " + toString(ok))
+    } catch (e) {
+        print("не мало дійти сюди")
+    }
+
+    // 4. Вкладені try — рекурсія, локальна змінна виживає після catch
+    try {
+        var saved = 42
+        try {
+            throw "внутрішня помилка"
+        } catch (inner) {
+            print("Внутрішній catch: " + inner)
+        }
+        print("saved після вкладеного try = " + toString(saved))
+    } catch (e) {
+        print("не мало дійти сюди")
+    }
+
+    print("Програма завершилась нормально")
+}

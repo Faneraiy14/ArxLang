@@ -1,0 +1,8 @@
+func sayHello(name: string) -> string {
+    return "Привіт, " + name
+}
+
+func main() {
+    var greeting = sayHello("Святослав")
+    print(greeting)
+}

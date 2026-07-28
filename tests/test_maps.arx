@@ -1,0 +1,30 @@
+func main() {
+    var ages = newMap()
+    mapSet(ages, "Святослав", 14)
+    mapSet(ages, "Олексій", 30)
+    mapSet(ages, "Дарина", 25)
+
+    print("Тип: " + typeOf(ages))
+    print("Розмір: " + toString(len(ages)))
+    print("Вік Святослава: " + toString(mapGet(ages, "Святослав")))
+    print("Є 'Богдан'? " + toString(mapHas(ages, "Богдан")))
+    print("Є 'Дарина'? " + toString(mapHas(ages, "Дарина")))
+
+    var keys = mapKeys(ages)
+    var i = 0
+    while i < len(keys) {
+        var k = keys[i]
+        print("  " + k + " -> " + toString(mapGet(ages, k)))
+        i = i + 1
+    }
+
+    mapRemove(ages, "Дарина")
+    print("Після видалення, розмір: " + toString(len(ages)))
+    print("Є 'Дарина'? " + toString(mapHas(ages, "Дарина")))
+
+    // Ключі-числа
+    var byId = newMap()
+    mapSet(byId, 1, "перший")
+    mapSet(byId, 2, "другий")
+    print("byId[1] = " + mapGet(byId, 1))
+}

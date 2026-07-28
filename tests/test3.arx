@@ -1,0 +1,32 @@
+// Складний тест з типами та структурами
+struct Person {
+    name: string
+    age: i32
+    isStudent: bool
+}
+
+func main() -> i32 {
+    var name: string = "Святослав"
+    var age: i32 = 14
+    var pi: f64 = 3.14159
+    var isGenius: bool = true
+    
+    if age >= 18 && isGenius == true {
+        print("Дорослий геній!")
+    } else if age >= 18 {
+        print("Дорослий")
+    } else {
+        print("Юний геній!")
+    }
+    
+    var counter: i32 = 0
+    while counter < 5 {
+        print(counter)
+        counter = counter + 1
+    }
+    
+    var result: i32 = age * 2 + 10
+    print("Результат: " + toString(result))
+    
+    return 0
+}

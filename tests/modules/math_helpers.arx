@@ -1,0 +1,16 @@
+func square(x) {
+    return x * x
+}
+
+func cube(x) {
+    return x * x * x
+}
+
+struct Vector2 {
+    x: number
+    y: number
+
+    func length() {
+        return sqrt(self.x * self.x + self.y * self.y)
+    }
+}

@@ -1,0 +1,46 @@
+func main() {
+    // sort
+    var nums = [5, 2, 8, 1, 9, 3]
+    var sorted = sort(nums, func(a, b) { return a - b })
+    var i = 0
+    var out = ""
+    while i < len(sorted) {
+        out = out + toString(sorted[i]) + " "
+        i = i + 1
+    }
+    print("Відсортовано: " + out)
+
+    // sort у зворотному порядку
+    var descSorted = sort(nums, func(a, b) { return b - a })
+    print("У зворотному: " + toString(descSorted[0]) + " ... " + toString(descSorted[len(descSorted)-1]))
+
+    // mapArr
+    var squares = mapArr(nums, func(x) { return x * x })
+    print("Квадрати[0] = " + toString(squares[0]) + ", squares[2] = " + toString(squares[2]))
+
+    // filter
+    var evens = filter(nums, func(x) { return x % 2 == 0 })
+    print("Парних: " + toString(len(evens)))
+
+    // reduce
+    var sum = reduce(nums, func(acc, x) { return acc + x }, 0)
+    print("Сума: " + toString(sum))
+
+    // JSON
+    var data = newMap()
+    mapSet(data, "name", "Святослав")
+    mapSet(data, "age", 14)
+    var arr = [1, 2, 3]
+
+    var json = toJson(data)
+    print("JSON мапи: " + json)
+
+    var jsonArr = toJson(arr)
+    print("JSON масиву: " + jsonArr)
+
+    var parsed = fromJson(jsonArr)
+    print("Розпарсено назад, елемент 1 = " + toString(parsed[1]))
+
+    var parsedObj = fromJson("{\"x\": 10, \"y\": 20}")
+    print("Розпарсений об'єкт: x=" + toString(mapGet(parsedObj, "x")) + " y=" + toString(mapGet(parsedObj, "y")))
+}

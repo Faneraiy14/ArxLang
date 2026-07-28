@@ -1,0 +1,34 @@
+struct Person {
+    name: string
+    age: i32
+
+    func sayHello() {
+        print("Привіт, я " + self.name + ", мені " + toString(self.age) + " років!")
+    }
+
+    func celebrateBirthday() {
+        self.age = self.age + 1
+        print("Ура! Тепер мені " + toString(self.age))
+    }
+}
+
+func main() {
+    print("=== ТЕСТ МЕТОДІВ СТРУКТУР ===")
+    var p = Person { name: "Святослав", age: 14 }
+    p.sayHello()
+    p.celebrateBirthday()
+    p.sayHello()
+
+    print("=== ТЕСТ ДИНАМІЧНИХ МАСИВІВ ===")
+    var arr = [10, 20]
+    print("Довжина: " + toString(len(arr)))
+    append(arr, 30)
+    print("Довжина після append: " + toString(len(arr)))
+    print("Елемент 2: " + toString(arr[2]))
+    arr[1] = 99
+    print("Елемент 1 після зміни: " + toString(arr[1]))
+    
+    var popped = pop(arr)
+    print("Видалений елемент: " + toString(popped))
+    print("Кінцева довжина: " + toString(len(arr)))
+}

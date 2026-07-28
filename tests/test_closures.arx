@@ -1,0 +1,35 @@
+func square(x) {
+    return x * x
+}
+
+func apply(fn, x) {
+    return fn(x)
+}
+
+func main() {
+    // 1. Іменована функція як значення, передана в іншу функцію
+    print("apply(square, 5) = " + toString(apply(square, 5)))
+
+    // 2. Анонімна функція (лямбда), збережена у змінну
+    var double_ = func(x) { return x * 2 }
+    print("double_(21) = " + toString(double_(21)))
+
+    // 3. Лямбда як аргумент
+    print("apply(func(x) { return x + 100 }, 7) = " + toString(apply(func(x) { return x + 100 }, 7)))
+
+    // 4. Замикання: лямбда захоплює зовнішню змінну на момент створення
+    var base_ = 1000
+    var addBase = func(x) { return x + base_ }
+    base_ = 9999 // змінюємо ПІСЛЯ створення - лямбда мала захопити старе значення (копія)
+    print("addBase(1) = " + toString(addBase(1)))
+
+    // 5. Функція, що повертає функцію
+    var makeAdder = func(n) {
+        return func(x) { return x + n }
+    }
+    var add5 = makeAdder(5)
+    print("add5(10) = " + toString(add5(10)))
+
+    print("typeOf(square) = " + typeOf(square))
+    print("typeOf(double_) = " + typeOf(double_))
+}

@@ -1,0 +1,57 @@
+namespace ArxLang.Compiler;
+
+public enum OpCode : byte
+{
+    LOAD_CONST, LOAD_VAR, STORE_VAR,
+    ADD, SUB, MUL, DIV, MOD,
+    EQ, NEQ, LT, LTE, GT, GTE,
+    AND, OR, NOT,
+    JUMP, JUMP_IF_FALSE, CALL, RETURN,
+    PRINT,
+    READ_LINE, READ_INT, READ_DOUBLE,
+    READ_FILE, WRITE_FILE, APPEND_FILE, FILE_EXISTS,
+    SQRT, ABS, POW, SIN, COS, TAN,
+    ROUND, FLOOR, CEIL, MAX, MIN,
+    TO_STRING, TO_INT, TO_DOUBLE, LEN,
+    ARRAY_NEW, ARRAY_GET, ARRAY_SET,
+    STRUCT_NEW, STRUCT_GET, STRUCT_SET,
+    CALL_NATIVE, CALL_METHOD,
+    TRY_BEGIN, TRY_END, THROW,
+    MAKE_CLOSURE, CALL_VALUE,
+    POP,
+    HALT
+}
+
+public class Bytecode
+{
+    public List<byte> Code { get; } = new();
+    public List<object> Constants { get; } = new();
+    public Dictionary<string, int> FunctionAddresses { get; } = new();
+
+    public void Emit(OpCode op, int? arg = null)
+    {
+        Code.Add((byte)op);
+        if (arg.HasValue)
+        {
+            Code.Add((byte)(arg.Value & 0xFF));
+            Code.Add((byte)((arg.Value >> 8) & 0xFF));
+        }
+    }
+
+    public void Emit(OpCode op, int arg1, int arg2)
+    {
+        Code.Add((byte)op);
+        Code.Add((byte)(arg1 & 0xFF));
+        Code.Add((byte)((arg1 >> 8) & 0xFF));
+        Code.Add((byte)(arg2 & 0xFF));
+        Code.Add((byte)((arg2 >> 8) & 0xFF));
+    }
+
+    public int AddConstant(object value)
+    {
+        Constants.Add(value);
+        return Constants.Count - 1;
+    }
+
+    public byte[] ToArray() => Code.ToArray();
+}

@@ -1,0 +1,58 @@
+
+func isAlpha(c) {
+    var code = charCode(c)
+    // A-Z: 65-90, a-z: 97-122, _: 95
+    if (code >= 65 && code <= 90) { return true }
+    if (code >= 97 && code <= 122) { return true }
+    if (code == 95) { return true }
+    return false
+}
+
+func isDigit(c) {
+    var code = charCode(c)
+    // 0-9: 48-57
+    if (code >= 48 && code <= 57) { return true }
+    return false
+}
+
+func tokenize(source) {
+    var tokens = []
+    var pos = 0
+    var length = len(source)
+    
+    while (pos < length) {
+        var c = substring(source, pos, 1)
+        
+        if (c == " " || c == "\n" || c == "\r" || c == "\t") {
+            pos = pos + 1
+        } else if (isAlpha(c)) {
+            var word = ""
+            while (pos < length && (isAlpha(substring(source, pos, 1)) || isDigit(substring(source, pos, 1)))) {
+                word = word + substring(source, pos, 1)
+                pos = pos + 1
+            }
+            append(tokens, "IDENTIFIER: " + word)
+        } else if (isDigit(c)) {
+            var num = ""
+            while (pos < length && isDigit(substring(source, pos, 1))) {
+                num = num + substring(source, pos, 1)
+                pos = pos + 1
+            }
+            append(tokens, "NUMBER: " + num)
+        } else {
+            append(tokens, "OPERATOR: " + c)
+            pos = pos + 1
+        }
+    }
+    return tokens
+}
+
+func main() {
+    var code = "var x = 10 + 5"
+    print("Токенізація коду: " + code)
+    var tokens = tokenize(code)
+    
+    for i in 0..len(tokens) {
+        print(tokens[i])
+    }
+}

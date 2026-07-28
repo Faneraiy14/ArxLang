@@ -1,0 +1,12 @@
+// Тест з умовами
+func main() {
+    var score = 85
+    
+    if score >= 90 {
+        print("Відмінно!")
+    } else if score >= 75 {
+        print("Добре!")
+    } else {
+        print("Потрібно більше працювати")
+    }
+}

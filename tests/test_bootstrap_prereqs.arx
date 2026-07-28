@@ -1,0 +1,40 @@
+func main() {
+    // null як значення
+    var x = null
+    print("x = " + toString(x))
+    print("isNull(x) = " + toString(isNull(x)))
+    print("isNull(5) = " + toString(isNull(5)))
+
+    if x {
+        print("не мало вивестись (null - хибне)")
+    } else {
+        print("null поводиться як хибне значення в умовах")
+    }
+
+    // ітерація по масиву без ручного індексу
+    var tokens = ["var", "x", "=", "10"]
+    for t in tokens {
+        print("токен: " + t)
+    }
+
+    // ітерація по масиву мап (типовий патерн для AST-вузлів)
+    var nodes = []
+    var n1 = newMap()
+    mapSet(n1, "type", "Number")
+    mapSet(n1, "value", 42)
+    append(nodes, n1)
+
+    var n2 = newMap()
+    mapSet(n2, "type", "String")
+    mapSet(n2, "value", "привіт")
+    append(nodes, n2)
+
+    for node in nodes {
+        print(mapGet(node, "type") + " -> " + toString(mapGet(node, "value")))
+    }
+
+    // діапазон досі працює як і раніше
+    for i in 0..3 {
+        print("range: " + toString(i))
+    }
+}

@@ -1,0 +1,23 @@
+// ============================================================
+// ArxLang-SelfHosted: повний (у межах обраної підмножини) інтерпретатор
+// ArxLang, написаний мовою ArxLang. Складається з трьох модулів,
+// пов'язаних через import (Фаза 5): лексер, парсер, інтерпретатор.
+// ============================================================
+
+import "lexer.arx"
+import "parser.arx"
+import "interpreter.arx"
+
+func main() {
+    print("=== ArxLang-SelfHosted: повний бутстрапінг ===")
+    print("")
+
+    var source = "struct Point { x, y } func Point.distance() { return sqrt(self.x * self.x + self.y * self.y) } func factorial(n) { if (n <= 1) { return 1 } return n * factorial(n - 1) } func makeCounter() { var count = 0 return func() { count = count + 1 return count } } func guestMain() { print(factorial(6)) var p = Point { x: 3, y: 4 } print(p.distance()) var arr = [10, 20, 30, 40] var sum = 0 for x in arr { sum = sum + x } print(sum) print(arr[2]) var counter = makeCounter() print(counter()) print(counter()) print(counter()) print(pow(2, 8)) var greeting = \"Привіт\" print(toUpper(greeting)) } guestMain()"
+
+    print("Виконую гостьову програму (рекурсія, структура+метод, масиви, замикання, нативний виклик):")
+    print("")
+    runProgram(source)
+
+    print("")
+    print("=== Очікувано: 720 / 5 / 100 / 30 / 1 2 3 / 256 / ПРИВІТ ===")
+}

@@ -1,0 +1,23 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+
+# Артефакти запусків: логи й дампи виводу, які лишаються після тестів
+*.log
+src/ArxLang/output*.txt
+src/ArxLang/grade_report.txt
+src/ArxLang/test.txt
+
+# Файли IDE
+.vs/
+.vscode/
+.idea/
+
+# Інструменти
+.claude/
+
+# Системні файли
+Thumbs.db
+Desktop.ini

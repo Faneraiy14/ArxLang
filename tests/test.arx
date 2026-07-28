@@ -1,0 +1,144 @@
+// ============================================
+// KOMPLEKSNY TEST ARX v1.0
+// ============================================
+
+// ----- ФУНКЦІЇ -----
+func sayHello(name: string) -> string {
+    return "Привіт, " + name + "!"
+}
+
+func add(a: i32, b: i32) -> i32 {
+    return a + b
+}
+
+func multiply(a: i32, b: i32) -> i32 {
+    var result: i32 = 0
+    var i: i32 = 0
+    while (i < b) {
+        result = result + a
+        i = i + 1
+    }
+    return result
+}
+
+func factorial(n: i32) -> i32 {
+    if (n <= 1) {
+        return 1
+    } else {
+        return n * factorial(n - 1)
+    }
+}
+
+func isEven(n: i32) -> bool {
+    return n % 2 == 0
+}
+
+func sumArray(arr: []) -> i32 {
+    var sum: i32 = 0
+    var i: i32 = 0
+    while (i < arr[0]) {
+        sum = sum + arr[i]
+        i = i + 1
+    }
+    return sum
+}
+
+// ----- ГОЛОВНА ФУНКЦІЯ -----
+func main() {
+    print("=== ARX v1.0 COMPLEX TEST ===")
+    print("")
+
+    // 1. РЯДКИ
+    var name: string = "Святослав"
+    var greeting: string = sayHello(name)
+    print(greeting)
+    print("")
+
+    // 2. АРИФМЕТИКА
+    var a: i32 = 10
+    var b: i32 = 5
+    var sum: i32 = add(a, b)
+    var product: i32 = multiply(a, b)
+    var fact: i32 = factorial(5)
+    
+    print("Арифметика:")
+    print("  " + toString(a) + " + " + toString(b) + " = " + toString(sum))
+    print("  " + toString(a) + " * " + toString(b) + " = " + toString(product))
+    print("  5! = " + toString(fact))
+    print("")
+
+    // 3. УМОВИ
+    print("Умови:")
+    if (isEven(a)) {
+        print("  " + toString(a) + " - парне")
+    } else {
+        print("  " + toString(a) + " - непарне")
+    }
+    
+    if (isEven(b)) {
+        print("  " + toString(b) + " - парне")
+    } else {
+        print("  " + toString(b) + " - непарне")
+    }
+    print("")
+
+    // 4. ЦИКЛИ
+    print("Цикли while:")
+    var counter: i32 = 0
+    while (counter < 3) {
+        print("  counter = " + toString(counter))
+        counter = counter + 1
+    }
+    print("")
+
+    print("Цикли for:")
+    for i in 0..5 {
+        print("  i = " + toString(i))
+    }
+    print("")
+
+    // 5. МАСИВИ
+    print("Масиви:")
+    var arr = [10, 20, 30, 40, 50]
+    print("  arr[0] = " + toString(arr[0]))
+    print("  arr[2] = " + toString(arr[2]))
+    print("  arr[4] = " + toString(arr[4]))
+    print("")
+
+    // 6. ВКЛАДЕНІ ВИКЛИКИ
+    print("Вкладені виклики:")
+    var complex: i32 = add(multiply(3, 4), factorial(3))
+    print("  add(multiply(3,4), factorial(3)) = " + toString(complex))
+    print("")
+
+    // 7. РЕКУРСІЯ
+    print("Рекурсія:")
+    var fib: i32 = 0
+    var prev: i32 = 1
+    var curr: i32 = 0
+    var j: i32 = 0
+    while (j < 10) {
+        curr = fib + prev
+        if (j % 2 == 0) {
+            print("  F(" + toString(j) + ") = " + toString(fib))
+        }
+        fib = prev
+        prev = curr
+        j = j + 1
+    }
+    print("")
+
+    // 8. ВВЕДЕННЯ З КОНСОЛІ (ЯКЩО РЕАЛІЗОВАНО)
+    print("Введіть ваше ім'я:")
+    // var input: string = readLine()
+    // print("Привіт, " + input + "!")
+    // print("")
+
+    print("=== ТЕСТ ЗАВЕРШЕНО ===")
+}
+
+// ----- ДОДАТКОВІ ФУНКЦІЇ -----
+func toString(value) -> string {
+    // Проста конвертація для виводу
+    return value
+}

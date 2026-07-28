@@ -33,17 +33,18 @@ func main() {
 
 ## Швидкий старт
 
+Готовий `.exe`, без .NET — розділ [INSTALL.md](INSTALL.md). З вихідного коду:
+
 ```bash
 dotnet build src/ArxLang
+powershell -ExecutionPolicy Bypass -File install-arx.ps1
 ```
 
-Запуск програми:
+Після цього — нове вікно термінала і:
 
 ```bash
-src/ArxLang/bin/Debug/net10.0-windows/ArxLang.exe myprogram.arx
+arx myprogram.arx
 ```
-
-Щоб не писати повний шлях щоразу, див. [Команда arx](#команда-arx).
 
 ## Що вміє мова
 
@@ -179,17 +180,9 @@ bash tests/run_all.sh
 
 ## Команда arx
 
-Щоб запускати `.arx` з будь-якої папки, додай теку зі збіркою в `PATH`
-і створи короткий псевдонім. У PowerShell:
-
-```powershell
-$exe = "C:\Projects\ArxEcosystem\src\ArxLang\bin\Debug\net10.0-windows\ArxLang.exe"
-New-Item -ItemType Directory -Force "$HOME\bin" | Out-Null
-Set-Content "$HOME\bin\arx.cmd" "@echo off`r`n`"$exe`" %*" -Encoding ascii
-[Environment]::SetEnvironmentVariable("PATH", "$env:PATH;$HOME\bin", "User")
-```
-
-Після перезапуску терміналу:
+Ставиться разом з мовою — `install-arx.ps1` з готового релізу чи з клону
+репозиторію, детальніше в [INSTALL.md](INSTALL.md). Після встановлення
+з будь-якої папки:
 
 ```bash
 arx myprogram.arx
@@ -197,11 +190,11 @@ arx myprogram.arx
 
 ## Відомі обмеження
 
-- Не можна викликати результат виклику напряму: замість `f()()` потрібна
-  проміжна змінна.
-- Немає імпорту за іменем — `import` підключає весь файл у глобальну область.
-- Немає менеджера пакетів: `arx install` поки не існує, залежності
-  підключаються через `import` з відносним шляхом.
+- `import "файл.arx"` підключає весь файл у глобальну область — вибіркового
+  імпорту окремих функцій немає.
+- Функцію не можна оголосити (`func`) усередині тіла іншої функції — лише
+  анонімні лямбди (`var f = func() {...}`). Іменовані функції — тільки
+  на верхньому рівні файлу чи структури.
 - Цільова платформа — Windows: VM використовує Windows Forms для GUI
   та графіки.
 

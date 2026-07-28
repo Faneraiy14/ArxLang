@@ -141,6 +141,31 @@ public class FunctionExpression : ExpressionNode
     public override string ToString(int indent = 0) => new string(' ', indent) + "FunctionExpr";
 }
 
+// Виклик значення, яке САМЕ Є виразом, а не просто ім'ям змінної — тобто
+// f()() чи arr[0](). CallExpression викликає ІМ'Я функції; тут callee -
+// довільний вираз, що вже обчислився в значення-функцію (замикання,
+// посилання на функцію), і його треба ще й ВИКЛИКАТИ через CALL_VALUE.
+public class CallValueExpression : ExpressionNode
+{
+    public ExpressionNode Callee { get; }
+    public List<ExpressionNode> Arguments { get; } = new();
+
+    public CallValueExpression(ExpressionNode callee, List<ExpressionNode> args)
+    {
+        Callee = callee;
+        Arguments = args;
+    }
+
+    public override string ToString(int indent = 0)
+    {
+        var pad = new string(' ', indent);
+        var result = $"{pad}CallValue: {Callee}\n";
+        foreach (var arg in Arguments)
+            result += $"{arg.ToString(indent + 2)}\n";
+        return result;
+    }
+}
+
 public class MethodCallExpression : ExpressionNode
 {
     public ExpressionNode Object { get; }

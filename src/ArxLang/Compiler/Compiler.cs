@@ -556,6 +556,15 @@ public class Compiler
                         break;
                 }
                 break;
+            case CallValueExpression cv:
+                // Callee - довільний вираз (попередній виклик, індексація,
+                // мапа тощо), а не ім'я змінної: CompileExpression сам кладе
+                // на стек значення-функцію, CALL_VALUE далі бере його разом
+                // з аргументами - той самий опкод, що й для "var f = ...; f()".
+                CompileExpression(cv.Callee);
+                foreach (var arg in cv.Arguments) CompileExpression(arg);
+                _bytecode!.Emit(OpCode.CALL_VALUE, cv.Arguments.Count);
+                break;
             case ArrayLiteralExpression a:
                 foreach (var elem in a.Elements)
                     CompileExpression(elem);

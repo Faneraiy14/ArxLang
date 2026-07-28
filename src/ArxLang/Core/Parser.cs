@@ -470,7 +470,11 @@ public class Parser
                     }
                     else
                     {
-                        throw new Exception("Виклик функції можливий лише для ідентифікаторів або членів структури");
+                        // expr - уже РЕЗУЛЬТАТ попереднього виклику/індексації
+                        // (f()(), arr[0](), map()["f"]()) - це не ім'я, а
+                        // значення-функція, яке компілятор викличе через
+                        // CALL_VALUE, обчисливши expr як звичайний вираз.
+                        expr = new CallValueExpression(expr, args);
                     }
                 }
                 else if (Peek().Type == TokenType.Punctuation && Peek().Value == "[")

@@ -207,4 +207,4 @@ arx myprogram.arx
 
 ## Ліцензія
 
-Приватний проєкт. Автор — Faneraiy14.
+MIT — див. [LICENSE](LICENSE). Автор — Faneraiy14.

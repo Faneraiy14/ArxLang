@@ -185,6 +185,10 @@ closeCanvas(canvas)
 - `sleep(ms)` - пауза виконання
 - `createCanvas(title,w,h)`, `clearCanvas`, `drawRect`, `drawCircle`, `drawLine`, `drawText`, `presentCanvas`, `canvasShouldClose`, `closeCanvas` - 2D графіка
 - `project3D(canvas,x,y,z,camDistance)` - проекція 3D-точки в 2D для рендеру 3D-сцен
+- `guiWindow(title,w,h)`, `guiLabel(text,x,y,w,h)`, `guiButton(text,x,y,w,h)`, `guiTextBox(x,y,w,h)` - вікна на Windows Forms
+- `guiAdd(parent,child)` - додати елемент у вікно; `guiSetText(control,text)`/`guiGetText(control)` - змінити/прочитати текст
+- `guiOnAction(button,fn)` - викликати ArxLang-функцію `fn` при кліку (звичайну функцію-значення, як у `sort(arr,cmp)` — без дужок, не рядок з іменем)
+- `guiShow(win)` - показати вікно (блокує, доки вікно не закриють)
 - `isKeyDown(key)`, `isMouseDown(canvas)`, `getMouseX/Y(canvas)` - ввід для вікна
 - `randomInt(min,max)`, `randomDouble(min,max)`, `now()`, `today()`, `timestamp()` - утиліти
 - `osPlatform()`, `osArchitecture()`, `osMemory()`, `osCpuCount()`, `osEnv(name)`, `osCwd()` - інформація про систему

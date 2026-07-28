@@ -65,7 +65,9 @@ public class Compiler
         "httpServer", "httpGet", "urlStatus",
         "createCanvas", "clearCanvas", "drawRect", "drawCircle", "drawLine", "drawText",
         "presentCanvas", "canvasShouldClose", "closeCanvas",
-        "isKeyDown", "isMouseDown", "getMouseX", "getMouseY", "project3D"
+        "isKeyDown", "isMouseDown", "getMouseX", "getMouseY", "project3D",
+        "guiWindow", "guiButton", "guiLabel", "guiTextBox", "guiAdd",
+        "guiOnAction", "guiShow", "guiSetText", "guiGetText"
     };
 
     public Bytecode Compile(ProgramNode program)

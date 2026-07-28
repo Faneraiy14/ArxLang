@@ -362,15 +362,23 @@ public class VirtualMachine
             parent.Controls.Add(child);
             return null;
         };
-        _nativeFunctions["guiOnAction"] = args => {
+        _nativeFunctions["guiSetText"] = args => {
             var control = (Control)args[0];
-            var funcName = args[1].ToString();
-            
+            control.Text = args[1]?.ToString() ?? "";
+            return null;
+        };
+        _nativeFunctions["guiGetText"] = args => ((Control)args[0]).Text;
+        _nativeFunctions["guiOnAction"] = args => {
+            // Другий аргумент — функція-ЗНАЧЕННЯ (як cmp у sort(arr,cmp)),
+            // не рядок з іменем. Раніше клік просто нічого не робив —
+            // обробник підписувався, але його тіло було порожнім, бо не
+            // мав доступу до VM, щоб реально викликати ArxLang-функцію.
+            var control = (Control)args[0];
+            var funcRef = (ArxFunctionRef)args[1];
+            var vm = Current!;
+
             if (control is Button btn) {
-                btn.Click += (s, e) => {
-                    // We will handle event by calling function by name
-                    // This is a bit of a hack but it works for simple cases if we have access to the VM instance
-                };
+                btn.Click += (s, e) => vm.InvokeFunctionValue(funcRef, Array.Empty<object>());
             }
             return null;
         };

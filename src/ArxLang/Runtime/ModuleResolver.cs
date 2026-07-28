@@ -1,6 +1,7 @@
 using System.Text;
 using ArxLang.AST;
 using ArxLang.Core;
+using ArxLang.Packages;
 
 namespace ArxLang.Runtime;
 
@@ -8,6 +9,11 @@ namespace ArxLang.Runtime;
 // імпортований .arx-файл (шлях відносно файлу, що імпортує), парсить його
 // й вливає його функції/структури у спільне дерево. Захист від циклічних
 // та повторних імпортів через набір уже відвіданих (повних) шляхів.
+//
+// Два види import:
+//   import "lexer.arx"   — шлях до файлу, відносно поточного каталогу
+//   import "somepkg"     — ім'я пакета БЕЗ .arx: шукається в arx_modules/,
+//                          з підйомом до кореня диска (як node_modules)
 public static class ModuleResolver
 {
     public static ProgramNode ResolveImports(ProgramNode program, string entryFilePath)
@@ -26,13 +32,20 @@ public static class ModuleResolver
         {
             if (stmt is ImportStatement import)
             {
-                string fullPath = Path.GetFullPath(Path.Combine(currentDir, import.Path));
+                string fullPath = ResolvePath(import.Path, currentDir);
 
                 if (visited.Contains(fullPath))
                     continue; // вже імпортовано - уникаємо циклів і дублювання
 
                 if (!File.Exists(fullPath))
-                    throw new Exception($"Файл модуля не знайдено: {fullPath}");
+                {
+                    throw new Exception(
+                        import.Path.EndsWith(".arx")
+                            ? $"Файл модуля не знайдено: {fullPath}"
+                            : $"Пакет '{import.Path}' не знайдено в arx_modules/ " +
+                              $"(шукано від {currentDir} до кореня диска). " +
+                              $"Встанови його: arx install <owner/repo>");
+                }
 
                 visited.Add(fullPath);
 
@@ -53,5 +66,18 @@ public static class ModuleResolver
         }
 
         return merged;
+    }
+
+    // ".arx" у рядку import — це шлях до конкретного файлу, як і раніше.
+    // Без розширення — ім'я пакета: шукаємо через PackageManager, а не як
+    // буквальний файл (тому "somepkg" не намагається відкрити файл
+    // "somepkg" без розширення).
+    private static string ResolvePath(string importPath, string currentDir)
+    {
+        if (importPath.EndsWith(".arx", StringComparison.OrdinalIgnoreCase))
+            return Path.GetFullPath(Path.Combine(currentDir, importPath));
+
+        var found = PackageManager.FindPackageEntry(currentDir, importPath);
+        return found != null ? Path.GetFullPath(found) : Path.GetFullPath(Path.Combine(currentDir, importPath));
     }
 }

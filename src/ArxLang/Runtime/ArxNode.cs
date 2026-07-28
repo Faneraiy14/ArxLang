@@ -3,6 +3,7 @@ using ArxLang.Core;
 using ArxLang.Compiler;
 using ArxLang.VM;
 using ArxLang.Tools;
+using ArxLang.Packages;
 
 namespace ArxLang.Runtime;
 
@@ -37,6 +38,12 @@ public class ArxNode
             return;
         }
 
+        if (command == "install")
+        {
+            RunInstall(args.Length > 1 ? args[1] : null);
+            return;
+        }
+
         if (File.Exists(command))
         {
             RunFile(command);
@@ -44,6 +51,22 @@ public class ArxNode
         else
         {
             Console.WriteLine($"Error: Cannot find file '{command}'");
+        }
+    }
+
+    // "arx install"            — ставить усе з arx.json у поточній папці
+    // "arx install owner/repo" — тягне конкретний пакет і дописує в arx.json
+    private static void RunInstall(string? source)
+    {
+        try
+        {
+            var projectDir = Directory.GetCurrentDirectory();
+            if (source == null) PackageManager.InstallAll(projectDir);
+            else PackageManager.InstallSingle(source, projectDir);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Помилка встановлення: {ex.Message}");
         }
     }
 

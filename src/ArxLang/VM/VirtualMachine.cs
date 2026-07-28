@@ -73,9 +73,18 @@ public class VirtualMachine
         _nativeFunctions["floor"] = args => Math.Floor(PopNumVal(args[0]));
         _nativeFunctions["ceil"] = args => Math.Ceiling(PopNumVal(args[0]));
         _nativeFunctions["pow"] = args => Math.Pow(PopNumVal(args[0]), PopNumVal(args[1]));
-        _nativeFunctions["max"] = args => Math.Max(PopNumVal(args[0]), PopNumVal(args[1]));
-        _nativeFunctions["min"] = args => Math.Min(PopNumVal(args[0]), PopNumVal(args[1]));
+        // max/min: як len/indexOf/reverse — розрізняють за типом args[0],
+        // не за кількістю аргументів. max(3,5) як і раніше; max([3,5,1])
+        // рахує максимум по всьому масиву замість вимоги розкладати його
+        // вручну через reduce().
+        _nativeFunctions["max"] = args => args[0] is List<object> arrMax
+            ? arrMax.Select(PopNumVal).Max()
+            : Math.Max(PopNumVal(args[0]), PopNumVal(args[1]));
+        _nativeFunctions["min"] = args => args[0] is List<object> arrMin
+            ? arrMin.Select(PopNumVal).Min()
+            : Math.Min(PopNumVal(args[0]), PopNumVal(args[1]));
         _nativeFunctions["clamp"] = args => Math.Max(PopNumVal(args[1]), Math.Min(PopNumVal(args[2]), PopNumVal(args[0])));
+        _nativeFunctions["toFixed"] = args => PopNumVal(args[0]).ToString("F" + TruncToInt(args[1]), System.Globalization.CultureInfo.InvariantCulture);
         
         // Random
         _nativeFunctions["randomInt"] = args => (double)_random.Next(TruncToInt(args[0]), TruncToInt(args[1]) + 1);

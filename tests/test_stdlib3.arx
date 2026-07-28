@@ -1,0 +1,29 @@
+// max/min тепер розрізняють два числа і масив (як len/indexOf/reverse
+// розрізняють тип args[0], а не кількість аргументів). Плюс toFixed()
+// для форматування чисел з фіксованою кількістю знаків після коми —
+// раніше не було жодного способу показати "3.14" замість "3.14159265".
+
+func main() {
+    print("1. max/min з двома числами — стара поведінка не зламана")
+    if max(3, 7) == 7 { print("  ок") } else { print("  ПРОВАЛ") }
+    if min(3, 7) == 3 { print("  ок") } else { print("  ПРОВАЛ") }
+
+    print("2. max/min з масивом")
+    var nums = [5, 2, 8, 1, 9, 3]
+    if max(nums) == 9 { print("  ок") } else { print("  ПРОВАЛ") }
+    if min(nums) == 1 { print("  ок") } else { print("  ПРОВАЛ") }
+
+    print("3. max/min з масивом дробових чисел")
+    var fl = [1.5, 2.7, 0.3]
+    if max(fl) == 2.7 { print("  ок") } else { print("  ПРОВАЛ") }
+    if min(fl) == 0.3 { print("  ок") } else { print("  ПРОВАЛ") }
+
+    print("4. toFixed() округлює до заданої кількості знаків")
+    if toFixed(3.14159, 2) == "3.14" { print("  ок") } else { print("  ПРОВАЛ") }
+    if toFixed(5, 2) == "5.00" { print("  ок") } else { print("  ПРОВАЛ") }
+    if toFixed(1.005, 0) == "1" { print("  ок") } else { print("  ПРОВАЛ") }
+
+    print("ГОТОВО")
+}
+
+main()

@@ -51,7 +51,7 @@ public class Compiler
         "readFile", "writeFile", "appendFile", "fileExists", "readLines",
         "sqrt", "abs", "pow", "sin", "cos", "tan",
         "round", "floor", "ceil", "max", "min", "clamp",
-        "toString", "toInt", "toDouble", "len",
+        "toString", "toInt", "toDouble", "toFixed", "len",
         "substring", "replace", "toUpper", "toLower", "contains", "startsWith", "endsWith", "split", "join",
         "trim", "repeat", "indexOf", "reverse",
         "append", "pop", "removeAt", "insert", "clear", "slice", "unique",

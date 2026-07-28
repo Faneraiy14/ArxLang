@@ -1,0 +1,54 @@
+// Рівність між числами з різних джерел. Раніше == порівнював ще й типи
+// "коробок", тому число з readInt() (int) не дорівнювало літералу (double).
+// Найпомітніше це ламало перевірку вибору в меню: if вибір == 2 { }.
+
+func main() {
+    print("1. літерал з літералом")
+    if 2 == 2 { print("  ок") } else { print("  ПРОВАЛ") }
+
+    print("2. змінна з літералом")
+    var a = 2
+    if a == 2 { print("  ок") } else { print("  ПРОВАЛ") }
+
+    print("3. ціле з дробовим тим самим значенням")
+    if 2 == 2.0 { print("  ок") } else { print("  ПРОВАЛ") }
+
+    print("4. результат randomInt з літералом")
+    var r = randomInt(7, 7)
+    if r == 7 { print("  ок") } else { print("  ПРОВАЛ") }
+
+    print("5. результат арифметики з літералом")
+    var s = 1 + 1
+    if s == 2 { print("  ок") } else { print("  ПРОВАЛ") }
+
+    print("6. toInt з літералом")
+    if toInt("42") == 42 { print("  ок") } else { print("  ПРОВАЛ") }
+
+    print("7. toDouble з цілим літералом")
+    if toDouble("3") == 3 { print("  ок") } else { print("  ПРОВАЛ") }
+
+    print("8. len з літералом")
+    if len([1, 2, 3]) == 3 { print("  ок") } else { print("  ПРОВАЛ") }
+
+    print("9. != працює так само")
+    if 2 != 3 { print("  ок") } else { print("  ПРОВАЛ") }
+    if toInt("5") != 5 { print("  ПРОВАЛ") } else { print("  ок") }
+
+    print("10. рядки не ламаються")
+    if "abc" == "abc" { print("  ок") } else { print("  ПРОВАЛ") }
+    if "abc" == "abd" { print("  ПРОВАЛ") } else { print("  ок") }
+
+    print("11. число не дорівнює рядку")
+    if 2 == "2" { print("  ПРОВАЛ") } else { print("  ок") }
+
+    print("12. null")
+    var n = null
+    if n == null { print("  ок") } else { print("  ПРОВАЛ") }
+    if 0 == null { print("  ПРОВАЛ") } else { print("  ок") }
+
+    print("13. bool")
+    if true == true { print("  ок") } else { print("  ПРОВАЛ") }
+    if true == false { print("  ПРОВАЛ") } else { print("  ок") }
+
+    print("ГОТОВО")
+}

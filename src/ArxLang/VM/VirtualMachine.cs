@@ -458,8 +458,8 @@ public class VirtualMachine
                 case OpCode.MUL: { var b = PopNum(); var a = PopNum(); _stack.Push(a * b); } break;
                 case OpCode.DIV: { var b = PopNum(); var a = PopNum(); _stack.Push(a / b); } break;
                 case OpCode.MOD: { var b = PopNum(); var a = PopNum(); _stack.Push(a % b); } break;
-                case OpCode.EQ: { var b = _stack.Pop(); var a = _stack.Pop(); _stack.Push(Equals(a, b)); } break;
-                case OpCode.NEQ: { var b = _stack.Pop(); var a = _stack.Pop(); _stack.Push(!Equals(a, b)); } break;
+                case OpCode.EQ: { var b = _stack.Pop(); var a = _stack.Pop(); _stack.Push(ValuesEqual(a, b)); } break;
+                case OpCode.NEQ: { var b = _stack.Pop(); var a = _stack.Pop(); _stack.Push(!ValuesEqual(a, b)); } break;
                 case OpCode.LT: { var b = PopNum(); var a = PopNum(); _stack.Push(a < b); } break;
                 case OpCode.LTE: { var b = PopNum(); var a = PopNum(); _stack.Push(a <= b); } break;
                 case OpCode.GT: { var b = PopNum(); var a = PopNum(); _stack.Push(a > b); } break;
@@ -480,7 +480,14 @@ public class VirtualMachine
                     while (true)
                     {
                         var input = Console.ReadLine();
-                        if (int.TryParse(input, out var result)) { _stack.Push(result); break; }
+                        // null = ввід закінчився (Ctrl+Z, конвеєр, перенаправлення
+                        // файлу). Раніше цикл у такому разі друкував запит
+                        // нескінченно, бо чекав на ввід, якого вже не буде.
+                        if (input == null) throw new Exception("Ввід закінчився: readInt() не отримав числа");
+                        // Штовхаємо double, а не int: усі інші числа в мові -
+                        // double, а порівняння int з double через object.Equals
+                        // давало false навіть для однакових значень.
+                        if (int.TryParse(input, out var result)) { _stack.Push((double)result); break; }
                         Console.Write("Введіть число: ");
                     }
                     break;
@@ -488,6 +495,7 @@ public class VirtualMachine
                     while (true)
                     {
                         var input = Console.ReadLine();
+                        if (input == null) throw new Exception("Ввід закінчився: readDouble() не отримав числа");
                         if (double.TryParse(input, out var result)) { _stack.Push(result); break; }
                         Console.Write("Введіть число: ");
                     }
@@ -736,4 +744,24 @@ public class VirtualMachine
     }
 
     private double PopNum() => Convert.ToDouble(_stack.Pop());
+
+    // Порівняння на рівність. Раніше тут був object.Equals, який порівнює ще й
+    // ТИПИ "коробок": int 2 та double 2.0 вважались різними, тому x == 2 давало
+    // false для числа з readInt(). При цьому < і > працювали правильно, бо
+    // зводять обидва боки до double через PopNum - через цю різницю баг і був
+    // непомітним: підказки "більше/менше" діяли, а перевірка на рівність ні.
+    private static bool ValuesEqual(object? a, object? b)
+    {
+        if (a == null || b == null) return a == null && b == null;
+
+        if (IsNumber(a) && IsNumber(b))
+            return Convert.ToDouble(a) == Convert.ToDouble(b);
+
+        return Equals(a, b);
+    }
+
+    private static bool IsNumber(object v) =>
+        v is double || v is float || v is decimal ||
+        v is int || v is long || v is short || v is sbyte ||
+        v is uint || v is ulong || v is ushort || v is byte;
 }

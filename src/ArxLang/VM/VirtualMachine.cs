@@ -78,12 +78,12 @@ public class VirtualMachine
         _nativeFunctions["clamp"] = args => Math.Max(PopNumVal(args[1]), Math.Min(PopNumVal(args[2]), PopNumVal(args[0])));
         
         // Random
-        _nativeFunctions["randomInt"] = args => _random.Next(Convert.ToInt32(args[0]), Convert.ToInt32(args[1]) + 1);
+        _nativeFunctions["randomInt"] = args => (double)_random.Next(TruncToInt(args[0]), TruncToInt(args[1]) + 1);
         _nativeFunctions["randomDouble"] = args => PopNumVal(args[0]) + (_random.NextDouble() * (PopNumVal(args[1]) - PopNumVal(args[0])));
 
         // Conversions & Types
         _nativeFunctions["toString"] = args => args[0]?.ToString() ?? "null";
-        _nativeFunctions["toInt"] = args => Convert.ToInt32(args[0]);
+        _nativeFunctions["toInt"] = args => TruncToInt(args[0]);
         _nativeFunctions["toDouble"] = args => Convert.ToDouble(args[0]);
         _nativeFunctions["typeOf"] = args => args[0] switch {
             List<object> => "array",
@@ -144,7 +144,7 @@ public class VirtualMachine
             var list = new List<object>((List<object>)args[0]);
             var funcRef = (ArxFunctionRef)args[1];
             var vm = Current!;
-            list.Sort((a, b) => Convert.ToInt32(Convert.ToDouble(vm.InvokeFunctionValue(funcRef, new object[] { a, b }))));
+            list.Sort((a, b) => Math.Sign(Convert.ToDouble(vm.InvokeFunctionValue(funcRef, new object[] { a, b }))));
             return list;
         };
         _nativeFunctions["mapArr"] = args => {
@@ -198,8 +198,8 @@ public class VirtualMachine
         };
         _nativeFunctions["substring"] = args => {
             string s = args[0]?.ToString() ?? "";
-            int start = Convert.ToInt32(args[1]);
-            int len = args.Length > 2 ? Convert.ToInt32(args[2]) : s.Length - start;
+            int start = TruncToInt(args[1]);
+            int len = args.Length > 2 ? TruncToInt(args[2]) : s.Length - start;
             if (start < 0) start = 0;
             if (len < 0) len = s.Length - start;
             if (start + len > s.Length) len = s.Length - start;
@@ -238,13 +238,13 @@ public class VirtualMachine
         };
         _nativeFunctions["removeAt"] = args => {
             var list = (List<object>)args[0];
-            int idx = Convert.ToInt32(args[1]);
+            int idx = TruncToInt(args[1]);
             list.RemoveAt(idx);
             return null;
         };
         _nativeFunctions["insert"] = args => {
             var list = (List<object>)args[0];
-            int idx = Convert.ToInt32(args[1]);
+            int idx = TruncToInt(args[1]);
             list.Insert(idx, args[2]);
             return null;
         };
@@ -354,6 +354,13 @@ public class VirtualMachine
     }
 
     private static double PopNumVal(object val) => Convert.ToDouble(val);
+
+    // Convert.ToInt32() округлює до найближчого ЦІЛОГО за банківським правилом
+    // (round half to even): 5.9->6, 5.5->6, АЛЕ 4.5->4, 2.5->2. Для toInt(),
+    // індексів масиву, довжин substring тощо очікується звичайне ВІДКИДАННЯ
+    // дробової частини (як (int) у C/C#, parseInt у JS): 5.9->5, -5.9->-5.
+    // Різниця непомітна на цілих числах і виринає лише на дробових аргументах.
+    private static int TruncToInt(object val) => (int)Convert.ToDouble(val);
 
     public VirtualMachine(Bytecode bytecode)
     {
@@ -556,7 +563,7 @@ public class VirtualMachine
                 case OpCode.MAX: { var b = PopNum(); var a = PopNum(); _stack.Push(Math.Max(a, b)); } break;
                 case OpCode.MIN: { var b = PopNum(); var a = PopNum(); _stack.Push(Math.Min(a, b)); } break;
                 case OpCode.TO_STRING: _stack.Push(_stack.Pop()?.ToString() ?? "null"); break;
-                case OpCode.TO_INT: _stack.Push(Convert.ToInt32(_stack.Pop())); break;
+                case OpCode.TO_INT: _stack.Push(TruncToInt(_stack.Pop())); break;
                 case OpCode.TO_DOUBLE: _stack.Push(Convert.ToDouble(_stack.Pop())); break;
                 case OpCode.LEN:
                     {
@@ -579,7 +586,7 @@ public class VirtualMachine
                     break;
                 case OpCode.ARRAY_GET:
                     {
-                        int index = Convert.ToInt32(_stack.Pop());
+                        int index = TruncToInt(_stack.Pop());
                         var arr = (List<object>)_stack.Pop();
                         _stack.Push(arr[index]);
                     }
@@ -587,7 +594,7 @@ public class VirtualMachine
                 case OpCode.ARRAY_SET:
                     {
                         var val = _stack.Pop();
-                        int index = Convert.ToInt32(_stack.Pop());
+                        int index = TruncToInt(_stack.Pop());
                         var arr = (List<object>)_stack.Pop();
                         arr[index] = val;
                     }

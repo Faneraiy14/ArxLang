@@ -4,19 +4,34 @@
 # Після встановлення .arx-файли можна запускати з будь-якої папки:
 #     arx myprogram.arx
 #
-# Запуск:  powershell -ExecutionPolicy Bypass -File install-arx.ps1
+# Запуск (з клону репозиторію, потрібен .NET SDK):
+#     powershell -ExecutionPolicy Bypass -File install-arx.ps1
+#
+# На чужому ПК без .NET і без клону репозиторію — качай самодостатній
+# ArxLang.exe зі сторінки Releases репозитрію й запускай install-arx.ps1
+# поруч із ним: скрипт знайде .exe в тій же папці, дотнет не знадобиться.
 # ============================================================
 
 $ErrorActionPreference = "Stop"
 
-$repo = Split-Path -Parent $MyInvocation.MyCommand.Path
-$exe  = Join-Path $repo "src\ArxLang\bin\Debug\net10.0-windows\ArxLang.exe"
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
-if (-not (Test-Path $exe)) {
-    Write-Host "ArxLang.exe не знайдено." -ForegroundColor Red
-    Write-Host "Спочатку зберіть проєкт:  dotnet build src\ArxLang"
+# Спершу шукаємо вже готовий .exe поруч зі скриптом (так буде на чужому ПК,
+# що скачав реліз) або в build-теці (так буде в клоні репозиторію розробника).
+$candidates = @(
+    (Join-Path $scriptDir "ArxLang.exe"),
+    (Join-Path $scriptDir "src\ArxLang\bin\Release\net10.0-windows\win-x64\publish\ArxLang.exe"),
+    (Join-Path $scriptDir "src\ArxLang\bin\Debug\net10.0-windows\ArxLang.exe")
+)
+$exe = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+
+if (-not $exe) {
+    Write-Host "ArxLang.exe не знайдено поруч зі скриптом і не зібрано локально." -ForegroundColor Red
+    Write-Host "Або поклади ArxLang.exe (з Releases) у цю ж папку, або зберіть проєкт:"
+    Write-Host "    dotnet build src\ArxLang"
     exit 1
 }
+Write-Host "Знайдено: $exe"
 
 $binDir = Join-Path $HOME "bin"
 if (-not (Test-Path $binDir)) {

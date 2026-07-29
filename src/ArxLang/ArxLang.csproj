@@ -15,4 +15,11 @@
     <UseWindowsForms Condition="'$(TargetFramework)' == 'net10.0-windows'">true</UseWindowsForms>
     <DefineConstants Condition="'$(TargetFramework)' == 'net10.0-windows'">$(DefineConstants);WINDOWS</DefineConstants>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Сестринський проєкт (окремий репозиторій, той самий батько
+         All-Arx) — embedded KV-база з WAL, підключена як стандартна
+         бібліотека db*-функцій (dbOpen/dbGet/dbSet/...). -->
+    <ProjectReference Include="..\..\..\ArxDb\src\ArxDb\ArxDb.csproj" />
+  </ItemGroup>
 </Project>

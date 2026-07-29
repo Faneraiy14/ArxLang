@@ -205,6 +205,7 @@ closeCanvas(canvas)
 - `toJson(v)`, `fromJson(str)` - серіалізація в JSON і назад
 - `sleep(ms)` - пауза виконання
 - `gc_stats()` - структура `{allocated, limit, bytesEstimate}` з обліком ArxLang-виділень (масиви/структури/мапи) поточного запуску; `gc_collect()` - форсує збирання сміття .NET і оновлює оцінку пам'яті; `gc_limit(n)` - встановлює ліміт кількості виділень, перевищення кидає помилку (можна зловити через `try/catch`, або задати ззовні через `ARX_GC_MAX_OBJECTS`)
+- `dbOpen(path)` - відкриває (чи створює) персистентну KV-базу [ArxDb](https://github.com/Faneraiy14/ArxDb) в теці за шляхом `path`; `dbSet(db,k,v)`, `dbGet(db,k)` (рядок або `null`), `dbHas(db,k)`, `dbDelete(db,k)` - значення в v1 лише рядки; `dbKeys(db,prefix?)` - масив ключів (опційно за префіксом); `dbCount(db)`; `dbCheckpoint(db)` - примусова компакція; `dbClose(db)` - закриває базу (компактує WAL, якщо він непорожній)
 - `createCanvas(title,w,h)`, `clearCanvas`, `drawRect`, `drawCircle`, `drawLine`, `drawText`, `presentCanvas`, `canvasShouldClose`, `closeCanvas` - 2D графіка
 - `project3D(canvas,x,y,z,camDistance)` - проекція 3D-точки в 2D для рендеру 3D-сцен
 - `guiWindow(title,w,h)`, `guiLabel(text,x,y,w,h)`, `guiButton(text,x,y,w,h)`, `guiTextBox(x,y,w,h)` - вікна на Windows Forms

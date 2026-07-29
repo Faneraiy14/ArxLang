@@ -9,6 +9,7 @@ obj/
 src/ArxLang/output*.txt
 src/ArxLang/grade_report.txt
 src/ArxLang/test.txt
+tests/test_arxdb_data/
 
 # Файли IDE
 .vs/

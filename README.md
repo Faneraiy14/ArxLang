@@ -76,6 +76,7 @@ dotnet src/ArxLang/bin/Debug/net10.0/ArxLang.dll myprogram.arx
 | Вищий порядок | `mapArr`, `filter`, `reduce`, `sort` |
 | GC-інструментарій | `gc_stats()`, `gc_collect()`, `gc_limit(n)` |
 | Оптимізація гарячих циклів | автоматично, вимикається через `ARX_JIT=0` |
+| Вбудована БД | `dbOpen`, `dbGet/dbSet/dbHas/dbDelete`, `dbKeys`, `dbCount` — персистентна KV-база з WAL |
 
 Стандартна бібліотека охоплює математику, рядки (зокрема `trim`, `repeat`,
 `indexOf`, `reverse`), масиви (`slice`, `unique`, `indexOf`, `reverse`),
@@ -112,6 +113,24 @@ ArxLang-значення — це боксовані CLR-об'єкти, тож �
 
 Вимірювання на Release-збірці (цикл на 20 млн ітерацій): ~30с з увімкненою
 оптимізацією проти ~58с без неї. Вимкнути можна через `ARX_JIT=0`.
+
+### Вбудована база даних
+
+[ArxDb](https://github.com/Faneraiy14/ArxDb) — сестринський проєкт,
+embedded KV-база з WAL-довговічністю — підключена як stdlib:
+
+```arx
+var db = dbOpen("mydata")
+dbSet(db, "greeting", "Привіт!")
+print(dbGet(db, "greeting"))
+dbClose(db)
+```
+
+Значення в v1 — лише рядки (UTF8). Повний список: `dbOpen(path)`,
+`dbClose(db)`, `dbSet(db,k,v)`, `dbGet(db,k)`, `dbHas(db,k)`,
+`dbDelete(db,k)`, `dbKeys(db,prefix?)`, `dbCount(db)`,
+`dbCheckpoint(db)`. Дані переживають перезапуск процесу — WAL і
+компакція описані в README ArxDb.
 
 ### VS Code
 

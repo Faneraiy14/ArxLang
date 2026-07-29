@@ -95,7 +95,8 @@ public class Compiler
         "isKeyDown", "isMouseDown", "getMouseX", "getMouseY", "project3D",
         "guiWindow", "guiButton", "guiLabel", "guiTextBox", "guiAdd",
         "guiOnAction", "guiShow", "guiSetText", "guiGetText",
-        "gc_stats", "gc_collect", "gc_limit"
+        "gc_stats", "gc_collect", "gc_limit",
+        "dbOpen", "dbClose", "dbSet", "dbGet", "dbHas", "dbDelete", "dbKeys", "dbCount", "dbCheckpoint"
     };
 
     public Bytecode Compile(ProgramNode program)

@@ -51,6 +51,7 @@ public class ArxNode
         else
         {
             Console.WriteLine($"Error: Cannot find file '{command}'");
+            Environment.Exit(1);
         }
     }
 
@@ -67,6 +68,7 @@ public class ArxNode
         catch (Exception ex)
         {
             Console.WriteLine($"Помилка встановлення: {ex.Message}");
+            Environment.Exit(1);
         }
     }
 
@@ -104,6 +106,11 @@ public class ArxNode
         catch (Exception ex)
         {
             Console.WriteLine($"Runtime Error: {ex.Message}");
+            // Без цього процес завершувався кодом 0 навіть після
+            // необробленої помилки — жоден CI/shell-скрипт, що перевіряє
+            // $?/ERRORLEVEL після запуску .arx-файлу, не міг побачити
+            // провал: скрипт з throw без catch виглядав як успішний запуск.
+            Environment.Exit(1);
         }
     }
 

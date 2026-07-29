@@ -1,0 +1,39 @@
+{
+  "name": "arxlang",
+  "displayName": "ArxLang",
+  "description": "Підсвічування синтаксису для .arx файлів (ArxLang)",
+  "version": "0.1.0",
+  "publisher": "Faneraiy14",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Faneraiy14/ArxLang.git"
+  },
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "arxlang",
+        "aliases": ["ArxLang", "arxlang"],
+        "extensions": [".arx"],
+        "icon": {
+          "light": "./icons/arx-icon.svg",
+          "dark": "./icons/arx-icon.svg"
+        },
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "arxlang",
+        "scopeName": "source.arxlang",
+        "path": "./syntaxes/arxlang.tmLanguage.json"
+      }
+    ]
+  }
+}

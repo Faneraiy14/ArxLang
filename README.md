@@ -96,6 +96,10 @@ ArxLang-значення — це боксовані CLR-об'єкти, тож �
 
 Ліміт також можна задати ззовні без зміни коду: `ARX_GC_MAX_OBJECTS=10000 arx script.arx`.
 
+### VS Code
+
+Розширення для підсвічування синтаксису `.arx` — у [vscode-arxlang/](vscode-arxlang/README.md).
+
 Повний опис синтаксису — у [GUIDE.md](GUIDE.md).
 
 ## Як це влаштовано

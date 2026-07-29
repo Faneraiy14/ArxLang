@@ -152,6 +152,14 @@ public class ArxNode
 
         var compiler = new Compiler.Compiler();
         var bytecode = compiler.Compile(program);
+
+        // Опційний ліміт на кількість ArxLang-виділень (масиви/структури/
+        // мапи) за весь запуск — захист від некерованого циклу виділень
+        // у .arx-скрипті, що інакше поклав би хост-процес.
+        var gcLimitEnv = Environment.GetEnvironmentVariable("ARX_GC_MAX_OBJECTS");
+        if (!string.IsNullOrEmpty(gcLimitEnv) && long.TryParse(gcLimitEnv, out var gcLimit))
+            ArxGc.Instance.SetLimit(gcLimit);
+
         var vm = new VirtualMachine(bytecode);
         vm.Run();
     }

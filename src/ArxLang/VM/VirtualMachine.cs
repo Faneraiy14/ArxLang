@@ -123,7 +123,15 @@ public class VirtualMachine
         _nativeFunctions["fromCharCode"] = args => ((char)Convert.ToInt32(args[0])).ToString();
 
         // Мапи/словники (окремий тип від struct)
-        _nativeFunctions["newMap"] = args => new ArxMap();
+        _nativeFunctions["newMap"] = args => { ArxGc.Instance.RecordAllocation(); return new ArxMap(); };
+
+        // GC-інструментарій: облік ArxLang-виділень (ARRAY_NEW/STRUCT_NEW/
+        // newMap) і опційний ліміт, щоб некерований цикл виділень у
+        // .arx-скрипті не поклав хост-процес. Це НЕ заміна CLR GC — той і
+        // так коректно збирає циклічні посилання в наших боксованих object.
+        _nativeFunctions["gc_stats"] = args => ArxGc.Instance.Stats();
+        _nativeFunctions["gc_collect"] = args => { ArxGc.Instance.Collect(); return null; };
+        _nativeFunctions["gc_limit"] = args => { ArxGc.Instance.SetLimit((long)PopNumVal(args[0])); return null; };
         _nativeFunctions["mapSet"] = args => {
             var map = (ArxMap)args[0];
             map.Entries[args[1]] = args[2];
@@ -631,6 +639,7 @@ public class VirtualMachine
                         var arr = new List<object>(size);
                         for (int i = 0; i < size; i++) arr.Add(0);
                         for (int i = size - 1; i >= 0; i--) arr[i] = _stack.Pop();
+                        ArxGc.Instance.RecordAllocation();
                         _stack.Push(arr);
                     }
                     break;
@@ -659,6 +668,7 @@ public class VirtualMachine
                             var name = (string)_stack.Pop();
                             fields[name] = val;
                         }
+                        ArxGc.Instance.RecordAllocation();
                         _stack.Push(fields);
                     }
                     break;

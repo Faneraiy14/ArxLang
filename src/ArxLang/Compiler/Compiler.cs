@@ -94,7 +94,8 @@ public class Compiler
         "presentCanvas", "canvasShouldClose", "closeCanvas",
         "isKeyDown", "isMouseDown", "getMouseX", "getMouseY", "project3D",
         "guiWindow", "guiButton", "guiLabel", "guiTextBox", "guiAdd",
-        "guiOnAction", "guiShow", "guiSetText", "guiGetText"
+        "guiOnAction", "guiShow", "guiSetText", "guiGetText",
+        "gc_stats", "gc_collect", "gc_limit"
     };
 
     public Bytecode Compile(ProgramNode program)

@@ -74,12 +74,27 @@ dotnet src/ArxLang/bin/Debug/net10.0/ArxLang.dll myprogram.arx
 | Помилки | `try { ... } catch (e) { ... }`, `throw` |
 | Модулі | `import "helpers.arx"` |
 | Вищий порядок | `mapArr`, `filter`, `reduce`, `sort` |
+| GC-інструментарій | `gc_stats()`, `gc_collect()`, `gc_limit(n)` |
 
 Стандартна бібліотека охоплює математику, рядки (зокрема `trim`, `repeat`,
 `indexOf`, `reverse`), масиви (`slice`, `unique`, `indexOf`, `reverse`),
 мапи, JSON, файли, час, HTTP-запити, 2D-графіку на канвасі, зчитування
 клавіш та GUI-вікна на Windows Forms з робочими кнопками (`guiWindow`,
 `guiButton`, `guiOnAction` — клік дійсно викликає ArxLang-функцію).
+
+### Пам'ять і GC
+
+ArxLang-значення — це боксовані CLR-об'єкти, тож збиранням сміття (в тому
+числі циклів посилань у структурах) вже коректно займається сама .NET CLR.
+Замість дублювання цього runtime додає ArxLang-скриптам облік власних
+виділень (масиви/структури/мапи) і опційний ліміт, щоб некерований цикл
+виділень не поклав хост-процес:
+
+- `gc_stats()` → структура `{ allocated, limit, bytesEstimate }`
+- `gc_collect()` → форсує `GC.Collect()` і оновлює оцінку пам'яті
+- `gc_limit(n)` → встановлює ліміт кількості виділень для поточного запуску; перевищення кидає помилку, яку можна зловити через `try/catch`
+
+Ліміт також можна задати ззовні без зміни коду: `ARX_GC_MAX_OBJECTS=10000 arx script.arx`.
 
 Повний опис синтаксису — у [GUIDE.md](GUIDE.md).
 

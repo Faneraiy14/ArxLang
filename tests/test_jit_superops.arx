@@ -1,0 +1,69 @@
+// Перевірка коректності superinstruction-оптимізації гарячих циклів
+// (ARX_JIT). Вивід ЦЬОГО файлу має бути побайтово однаковим із
+// ARX_JIT=0 і без нього (без змінної / ARX_JIT=1) — саме це порівнює
+// run_all.sh. Кожен цикл навмисно довший за HotThreshold (512), щоб
+// superinstruction точно встигла встановитись.
+
+func main() {
+    // 1. Простий числовий for-цикл (лічильник + межа — обидва double)
+    var sum = 0
+    for i in 0..2000 {
+        sum = sum + i
+    }
+    print("sum(0..2000) = " + toString(sum))
+
+    // 2. Вкладені цикли — внутрішній стає гарячим після кількох проходів
+    // зовнішнього (лічильник накопичується по всіх ітераціях зовнішнього)
+    var total = 0
+    var outer = 0
+    while outer < 5 {
+        var inner = 0
+        while inner < 600 {
+            total = total + 1
+            inner = inner + 1
+        }
+        outer = outer + 1
+    }
+    print("total = " + toString(total))
+
+    // 3. break/continue всередині гарячого циклу — superinstruction не
+    // повинна заважати іншим JUMP-ам у тілі циклу.
+    var count = 0
+    for i in 0..3000 {
+        if i % 2 == 0 {
+            continue
+        }
+        if i > 2900 {
+            break
+        }
+        count = count + 1
+    }
+    print("count = " + toString(count))
+
+    // 4. Дробовий крок циклу — guard має пропускати і double-кроки, не
+    // лише цілі.
+    var f = 0.0
+    var steps = 0
+    while f < 300.0 {
+        f = f + 0.5
+        steps = steps + 1
+    }
+    print("steps = " + toString(steps))
+
+    // 5. Гарячий цикл із try/catch у тілі — InstallSuperOps має ПОБАЧИТИ
+    // TRY_BEGIN і НІЧОГО не встановлювати для цього циклу (безпечний
+    // відкат), а не намагатись обходити _handlers.
+    var caught = 0
+    for i in 0..1000 {
+        try {
+            if i == 500 {
+                throw "тест"
+            }
+        } catch (e) {
+            caught = caught + 1
+        }
+    }
+    print("caught = " + toString(caught))
+
+    print("Усі перевірки JIT завершились нормально")
+}

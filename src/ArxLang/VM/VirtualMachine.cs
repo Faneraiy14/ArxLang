@@ -49,6 +49,34 @@ public class VirtualMachine
     }
     private readonly Stack<ExceptionHandler> _handlers = new();
 
+    // "Найпростіший варіант" JIT: справжня компіляція в машинний код тут не
+    // має сенсу — значення ArxLang все одно боксовані object, тож
+    // Reflection.Emit виграв би хіба що в диспетчеризації switch, а не в
+    // боксингу/словникових пошуках, які й так домінують. Натомість
+    // розпізнаємо 2 конкретні "гарячі" послідовності опкодів (лічильник
+    // циклу і порівняння лічильника з межею) і виконуємо їх напряму через
+    // C#-арифметику, минаючи стек і бокси, — з guard-перевіркою типів на
+    // КОЖНІЙ ітерації, тож будь-яка зміна типу всередині циклу миттєво й
+    // безпечно повертає виконання назад у звичайний інтерпретатор.
+    private enum SuperOpKind { IncLocal, CmpJump }
+
+    private readonly struct SuperOp
+    {
+        public required SuperOpKind Kind { get; init; }
+        public required int Length { get; init; }
+        public required int SlotA { get; init; }
+        public int ConstIdx { get; init; }
+        public bool RightIsConst { get; init; }
+        public int SlotB { get; init; }
+        public OpCode CompareOp { get; init; }
+        public int JumpTarget { get; init; }
+    }
+
+    private const int HotThreshold = 512;
+    private readonly Dictionary<int, int> _backEdgeHits = new();
+    private SuperOp?[]? _super;
+    private readonly bool _jitEnabled = Environment.GetEnvironmentVariable("ARX_JIT") != "0";
+
     private void UnwindToHandler(object? errorValue)
     {
         var handler = _handlers.Pop();
@@ -478,6 +506,9 @@ public class VirtualMachine
 
     private bool Step()
     {
+            var installed = _super?[_ip];
+            if (installed.HasValue && TryExecSuper(installed.Value)) return true;
+
             try
             {
             var op = (OpCode)_code[_ip++];
@@ -551,7 +582,26 @@ public class VirtualMachine
                 case OpCode.AND: { var b = Convert.ToBoolean(_stack.Pop()); var a = Convert.ToBoolean(_stack.Pop()); _stack.Push(a && b); } break;
                 case OpCode.OR: { var b = Convert.ToBoolean(_stack.Pop()); var a = Convert.ToBoolean(_stack.Pop()); _stack.Push(a || b); } break;
                 case OpCode.NOT: _stack.Push(!Convert.ToBoolean(_stack.Pop())); break;
-                case OpCode.JUMP: _ip = ReadInt16(); break;
+                case OpCode.JUMP:
+                    {
+                        int jumpInstrAddr = _ip - 1;
+                        int target = ReadInt16();
+                        // Зворотний перехід (target ще раніше по коду, ніж сам
+                        // JUMP) — це саме те, у що компілюються while/for
+                        // (Compiler.cs: JUMP на startPos/forStart). Рахуємо
+                        // скільки разів пройшли через кожен такий заголовок
+                        // циклу і після HotThreshold ітерацій пробуємо
+                        // встановити superinstruction-и для нього.
+                        if (_jitEnabled && target < jumpInstrAddr)
+                        {
+                            _backEdgeHits.TryGetValue(target, out var hits);
+                            hits++;
+                            _backEdgeHits[target] = hits;
+                            if (hits == HotThreshold) InstallSuperOps(target, jumpInstrAddr);
+                        }
+                        _ip = target;
+                    }
+                    break;
                 case OpCode.JUMP_IF_FALSE:
                     int addr2 = ReadInt16();
                     if (!Convert.ToBoolean(_stack.Pop())) _ip = addr2;
@@ -826,6 +876,154 @@ public class VirtualMachine
                 // перехоплюємо її так само, як явний throw.
                 UnwindToHandler(ex.Message);
             }
+        return true;
+    }
+
+    // Виконує вже встановлену superinstruction напряму через C#-арифметику,
+    // минаючи стек/бокси. Повертає false БЕЗ жодного побічного ефекту
+    // (нічого не займає з _stack, не рухає _ip), якщо guard типів не
+    // пройшов, — тоді Step() просто продовжує звичайний switch з того ж
+    // самого _ip, наче superinstruction тут і не було.
+    private bool TryExecSuper(SuperOp s)
+    {
+        switch (s.Kind)
+        {
+            case SuperOpKind.IncLocal:
+            {
+                if (!_currentFrame.TryGetValue(s.SlotA, out var av) || av is not double da) return false;
+                if (_constants[s.ConstIdx] is not double dc) return false;
+                _currentFrame[s.SlotA] = da + dc;
+                _ip += s.Length;
+                return true;
+            }
+            case SuperOpKind.CmpJump:
+            {
+                if (!_currentFrame.TryGetValue(s.SlotA, out var av) || av is not double da) return false;
+                double db;
+                if (s.RightIsConst)
+                {
+                    if (_constants[s.ConstIdx] is not double dc) return false;
+                    db = dc;
+                }
+                else
+                {
+                    if (!_currentFrame.TryGetValue(s.SlotB, out var bv) || bv is not double dbv) return false;
+                    db = dbv;
+                }
+                bool cond = s.CompareOp switch
+                {
+                    OpCode.LT => da < db,
+                    OpCode.LTE => da <= db,
+                    OpCode.GT => da > db,
+                    OpCode.GTE => da >= db,
+                    _ => false
+                };
+                _ip = cond ? _ip + s.Length : s.JumpTarget;
+                return true;
+            }
+            default:
+                return false;
+        }
+    }
+
+    // Розмір інструкції в байтах (1 байт опкод + операнди), потрібен щоб
+    // коректно пройти байткод циклу інструкція-за-інструкцією замість
+    // наївного побайтового сканування — інакше байт операнда іншої
+    // інструкції міг би хибно "збігтись" зі значенням TRY_BEGIN/THROW.
+    private static int InstrLength(OpCode op) => op switch
+    {
+        OpCode.CALL_NATIVE or OpCode.CALL_METHOD or OpCode.MAKE_CLOSURE or OpCode.TRY_BEGIN => 5,
+        OpCode.LOAD_CONST or OpCode.LOAD_VAR or OpCode.STORE_VAR or OpCode.GET_GLOBAL or OpCode.SET_GLOBAL
+            or OpCode.CALL or OpCode.JUMP or OpCode.JUMP_IF_FALSE or OpCode.ARRAY_NEW or OpCode.STRUCT_NEW
+            or OpCode.CALL_VALUE => 3,
+        _ => 1
+    };
+
+    // Гарячий зворотний перехід (backward JUMP) знайдено вдруге за
+    // HotThreshold ітерацій — пробуємо розпізнати 2 безпечні патерни:
+    // CMP_JMP у заголовку циклу (loopStart) і INC_LOCAL одразу перед самим
+    // JUMP (jumpInstrAddr). Якщо десь у тілі циклу є try/catch/throw —
+    // ліпше взагалі нічого не встановлювати: superinstruction обходить
+    // звичайний switch, а разом з ним і всю логіку _handlers/UnwindToHandler.
+    private void InstallSuperOps(int loopStart, int jumpInstrAddr)
+    {
+        _super ??= new SuperOp?[_code.Length];
+
+        for (int i = loopStart; i < jumpInstrAddr;)
+        {
+            var op = (OpCode)_code[i];
+            if (op is OpCode.TRY_BEGIN or OpCode.TRY_END or OpCode.THROW) return;
+            i += InstrLength(op);
+        }
+
+        TryInstallCmpJump(loopStart, jumpInstrAddr);
+        TryInstallIncLocal(loopStart, jumpInstrAddr);
+    }
+
+    private void TryInstallCmpJump(int loopStart, int loopEndExclusive)
+    {
+        int i = loopStart;
+        if (!TryReadOperand(ref i, loopEndExclusive, out var leftOp, out var leftArg)) return;
+        if (leftOp != OpCode.LOAD_VAR) return;
+        if (!TryReadOperand(ref i, loopEndExclusive, out var rightOp, out var rightArg)) return;
+        if (rightOp != OpCode.LOAD_VAR && rightOp != OpCode.LOAD_CONST) return;
+        if (i >= loopEndExclusive) return;
+        var cmpOp = (OpCode)_code[i];
+        if (cmpOp is not (OpCode.LT or OpCode.LTE or OpCode.GT or OpCode.GTE)) return;
+        i += 1;
+        if (!TryReadOperand(ref i, loopEndExclusive, out var jmpOp, out var jmpArg)) return;
+        if (jmpOp != OpCode.JUMP_IF_FALSE) return;
+
+        _super![loopStart] = new SuperOp
+        {
+            Kind = SuperOpKind.CmpJump,
+            Length = i - loopStart,
+            SlotA = leftArg,
+            RightIsConst = rightOp == OpCode.LOAD_CONST,
+            SlotB = rightArg,
+            ConstIdx = rightArg,
+            CompareOp = cmpOp,
+            JumpTarget = jmpArg
+        };
+    }
+
+    private void TryInstallIncLocal(int loopStart, int jumpInstrAddr)
+    {
+        const int patternLen = 10; // LOAD_VAR(3) + LOAD_CONST(3) + ADD(1) + STORE_VAR(3)
+        int start = jumpInstrAddr - patternLen;
+        if (start < loopStart) return;
+
+        int i = start;
+        if (!TryReadOperand(ref i, jumpInstrAddr, out var op1, out var slot1)) return;
+        if (op1 != OpCode.LOAD_VAR) return;
+        if (!TryReadOperand(ref i, jumpInstrAddr, out var op2, out var constIdx)) return;
+        if (op2 != OpCode.LOAD_CONST) return;
+        if (i >= jumpInstrAddr || (OpCode)_code[i] != OpCode.ADD) return;
+        i += 1;
+        if (!TryReadOperand(ref i, jumpInstrAddr, out var op3, out var slot2)) return;
+        if (op3 != OpCode.STORE_VAR) return;
+        if (slot1 != slot2) return;
+        if (i != jumpInstrAddr) return;
+
+        _super![start] = new SuperOp
+        {
+            Kind = SuperOpKind.IncLocal,
+            Length = patternLen,
+            SlotA = slot1,
+            ConstIdx = constIdx
+        };
+    }
+
+    // Читає одну інструкцію з операндом (LOAD_VAR/LOAD_CONST/STORE_VAR/
+    // JUMP_IF_FALSE тощо — усі рівно 3 байти: опкод + Int16), не виходячи
+    // за межі [i, limit).
+    private bool TryReadOperand(ref int i, int limit, out OpCode op, out int arg)
+    {
+        op = default; arg = 0;
+        if (i + 3 > limit) return false;
+        op = (OpCode)_code[i];
+        arg = _code[i + 1] | (_code[i + 2] << 8);
+        i += 3;
         return true;
     }
 

@@ -14,8 +14,9 @@ TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EXE="${ARX_EXE:-$TESTS_DIR/../src/ArxLang/bin/Debug/net10.0-windows/ArxLang.exe}"
 
 # Відкривають вікна, слухають порт назавжди або чекають на ввід —
-# у автоматичному прогоні пропускаємо.
-SKIP="test_graphics2d.arx test_graphics3d.arx calculator.arx test_http_server.arx"
+# у автоматичному прогоні пропускаємо. bench_loop.arx — навмисно повільний
+# неформальний бенчмарк (десятки секунд), не тест коректності.
+SKIP="test_graphics2d.arx test_graphics3d.arx calculator.arx test_http_server.arx bench_loop.arx"
 
 # Тести, де помилка — очікуваний результат.
 EXPECT_ERROR="test_throw_uncaught.arx test_nested_scope_error.arx"
@@ -93,6 +94,22 @@ if [ -f "modules/main.arx" ]; then
     else
         echo "✅ modules/main.arx"
         pass=$((pass+1))
+    fi
+fi
+
+# JIT (superinstruction-оптимізація гарячих циклів, VirtualMachine.cs):
+# найважливіша перевірка — вивід З ARX_JIT увімкненим (типово) і з
+# ARX_JIT=0 має бути ПОБАЙТОВО однаковим. Розбіжність означає, що
+# superinstruction десь порушує семантику, а не просто прискорює.
+if [ -f "test_jit_superops.arx" ]; then
+    jit_on=$(timeout "$TIMEOUT_SEC" "$EXE" test_jit_superops.arx 2>&1)
+    jit_off=$(timeout "$TIMEOUT_SEC" env ARX_JIT=0 "$EXE" test_jit_superops.arx 2>&1)
+    if [ "$jit_on" = "$jit_off" ]; then
+        echo "✅ test_jit_superops.arx — ARX_JIT=1 і ARX_JIT=0 дають однаковий вивід"
+        pass=$((pass+1))
+    else
+        echo "❌ test_jit_superops.arx — вивід ARX_JIT=1 і ARX_JIT=0 РІЗНИТЬСЯ"
+        fail=$((fail+1)); failed+=("test_jit_superops.arx — розбіжність JIT on/off")
     fi
 fi
 

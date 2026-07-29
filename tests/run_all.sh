@@ -18,7 +18,7 @@ EXE="${ARX_EXE:-$TESTS_DIR/../src/ArxLang/bin/Debug/net10.0-windows/ArxLang.exe}
 SKIP="test_graphics2d.arx test_graphics3d.arx calculator.arx test_http_server.arx"
 
 # Тести, де помилка — очікуваний результат.
-EXPECT_ERROR="test_throw_uncaught.arx"
+EXPECT_ERROR="test_throw_uncaught.arx test_nested_scope_error.arx"
 
 TIMEOUT_SEC=25
 

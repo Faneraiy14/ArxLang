@@ -1,0 +1,70 @@
+// Вкладені іменовані функції з реальною лексичною видимістю.
+//
+// Перший варіант цього фікса (не в цій версії) робив вкладені func
+// частиною ОДНОГО спільного плаского простору імен: однакова назва
+// вкладеної функції у двох різних "батьках" тихо конфліктувала, і
+// вкладену функцію можна було випадково викликати ЗВІДУСІЛЬ у програмі,
+// не тільки зсередини "батька". Тепер вкладена func реєструється під
+// уточненим іменем "батько::дитина" і резолвиться від найближчого
+// "батька" до найдальшого — як у більшості мов з лексичною видимістю.
+//
+// Ще раніше, до всіх цих фіксів, виклик вкладеної func узагалі мовчки
+// зупиняв усю програму без жодної помилки (адреса лишалась заглушкою -1).
+
+func withOneLevel() {
+    func helper() {
+        return "з helper"
+    }
+    return helper()
+}
+
+func withThreeLevels() {
+    func level2() {
+        func level3() {
+            return "з глибини"
+        }
+        return level3()
+    }
+    return level2()
+}
+
+func withRecursion() {
+    func fact(n) {
+        if n <= 1 { return 1 }
+        return n * fact(n - 1)
+    }
+    return fact(5)
+}
+
+func containerA() {
+    func shared() {
+        return "з A"
+    }
+    return shared()
+}
+
+func containerB() {
+    func shared() {
+        return "з B"
+    }
+    return shared()
+}
+
+func main() {
+    print("1. Один рівень вкладеності")
+    if withOneLevel() == "з helper" { print("  ок") } else { print("  ПРОВАЛ") }
+
+    print("2. Три рівні вкладеності")
+    if withThreeLevels() == "з глибини" { print("  ок") } else { print("  ПРОВАЛ") }
+
+    print("3. Рекурсія у вкладеній функції")
+    if withRecursion() == 120 { print("  ок") } else { print("  ПРОВАЛ") }
+
+    print("4. Однакова назва в різних \"батьках\" — кожен бачить СВОЮ")
+    if containerA() == "з A" { print("  ок") } else { print("  ПРОВАЛ") }
+    if containerB() == "з B" { print("  ок") } else { print("  ПРОВАЛ") }
+
+    print("ГОТОВО")
+}
+
+main()

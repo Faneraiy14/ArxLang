@@ -9,6 +9,33 @@ public class Compiler
     private Dictionary<string, int> _vars = new();
     private readonly Dictionary<string, int> _functions = new();
     private int _varCounter;
+
+    // Вкладена func (усередині іншої func) реєструється під УТОЧНЕНИМ
+    // іменем "батько::дитина" (не голим "дитина"), інакше однакова назва
+    // вкладеної функції у двох різних "батьках" тихо перезаписувала б
+    // одна одну в спільному словнику _functions. Стек — ланцюжок "батьків"
+    // поточної функції, що компілюється/реєструється просто зараз;
+    // порожній на верхньому рівні файлу.
+    private readonly List<string> _funcNestingStack = new();
+
+    private string QualifyFunctionName(string name) =>
+        _funcNestingStack.Count == 0 ? name : string.Join("::", _funcNestingStack) + "::" + name;
+
+    // Виклик "foo()" усередині функції може означати: вкладену функцію в
+    // ПОТОЧНІЙ функції, або в якомусь із "батьків" (лексична видимість —
+    // від найближчого до найдальшого), або звичайну функцію верхнього
+    // рівня. Повертає перше знайдене уточнене ім'я, або null, якщо це не
+    // вкладена/верхньорівнева функція взагалі (виклик — builtin/змінна/
+    // помилка вирішується викликачем).
+    private string? ResolveFunctionName(string name)
+    {
+        for (int i = _funcNestingStack.Count; i >= 0; i--)
+        {
+            string candidate = i == 0 ? name : string.Join("::", _funcNestingStack.Take(i)) + "::" + name;
+            if (_functions.ContainsKey(candidate)) return candidate;
+        }
+        return null;
+    }
     // ВИПРАВЛЕНО: функції компілюються по черзі, в порядку оголошення, тому
     // виклик функції, яка оголошена ПІЗНІШЕ у файлі (напр. main викликає
     // factorial, а factorial оголошена нижче), раніше отримував адресу -1
@@ -138,8 +165,10 @@ public class Compiler
         {
             if (stmt is FunctionDeclaration func)
             {
-                _functions[func.Name] = -1;
+                _functions[QualifyFunctionName(func.Name)] = -1;
+                _funcNestingStack.Add(func.Name);
                 RegisterFunctions(func.Body.Statements);
+                _funcNestingStack.RemoveAt(_funcNestingStack.Count - 1);
             }
             else if (stmt is StructDeclaration structDecl)
             {
@@ -171,9 +200,15 @@ public class Compiler
         {
             if (stmt is FunctionDeclaration func)
             {
-                _functions[func.Name] = _bytecode!.Code.Count;
-                _bytecode.FunctionAddresses[func.Name] = _bytecode.Code.Count;
-                
+                string qualifiedName = QualifyFunctionName(func.Name);
+                _functions[qualifiedName] = _bytecode!.Code.Count;
+                _bytecode.FunctionAddresses[qualifiedName] = _bytecode.Code.Count;
+                // Стек "батьків" має містити ЦЮ функцію вже під час компіляції
+                // її власного тіла (виклики всередині мають резолвитись
+                // відносно неї) і під час пошуку вкладених у ній функцій
+                // нижче — знімається лише в самому кінці цієї гілки.
+                _funcNestingStack.Add(func.Name);
+
                 // Зберігаємо поточний стан змінних для ізоляції функцій
                 var oldVars = new Dictionary<string, int>(_vars);
                 // ВИПРАВЛЕНО: кожна функція починає нумерацію слотів з нуля.
@@ -205,8 +240,24 @@ public class Compiler
                 // Відновлюємо змінні та лічильник слотів
                 _vars = oldVars;
                 _varCounter = oldVarCounter;
+
+                // RegisterFunctions() (вище) рекурсивно реєструє ІМ'Я кожної
+                // func-декларації, включно з вкладеними в тіло іншої функції
+                // (_functions[name] = -1, щоб виклик компілювався без помилки
+                // "не оголошена"). Але CompileFunctions() РАНІШЕ не заходила
+                // в func.Body — реальну адресу й байткод вкладена функція так
+                // ніколи й не отримувала, лишаючись назавжди на "-1". Виклик
+                // такої функції мовчки зупиняв всю програму (CALL стрибав на
+                // сміттєву адресу, _ip вилітав за межі коду, Run() тихо
+                // завершувався без жодної помилки). Тепер обидва проходи
+                // симетричні: вкладена func компілюється одразу після
+                // тіла-власника, її байткод лежить ПІСЛЯ RETURN власника,
+                // тому нормальне виконання туди "не провалюється" — дістатись
+                // можна лише явним викликом за іменем.
+                CompileFunctions(func.Body.Statements);
+                _funcNestingStack.RemoveAt(_funcNestingStack.Count - 1);
             }
-            
+
             // Шукаємо вкладені функції в інших інструкціях
             if (stmt is StructDeclaration structDecl) { CompileFunctions(structDecl.Methods); }
             else if (stmt is IfStatement i) { CompileFunctions(i.ThenBlock.Statements); if (i.ElseBlock != null) CompileFunctions(i.ElseBlock.Statements); }
@@ -463,13 +514,15 @@ public class Compiler
                     int nativeConstIdx = _bytecode!.AddConstant(nativeRef);
                     _bytecode.Emit(OpCode.LOAD_CONST, nativeConstIdx);
                 }
-                else if (_functions.ContainsKey(v.Name))
+                else if (ResolveFunctionName(v.Name) is string resolvedRefName)
                 {
                     // Посилання на іменовану функцію ЯК ЗНАЧЕННЯ (без виклику).
                     // Адреса патчиться пізніше, коли всі функції вже скомпільовані.
+                    // resolvedRefName — уточнене ім'я з урахуванням вкладеності
+                    // (те саме лексичне резолвення, що й для звичайного виклику).
                     var funcRef = new ArxFunctionRef { Name = v.Name };
                     int constIdx = _bytecode!.AddConstant(funcRef);
-                    _pendingFunctionRefs.Add((funcRef, v.Name));
+                    _pendingFunctionRefs.Add((funcRef, resolvedRefName));
                     _bytecode.Emit(OpCode.LOAD_CONST, constIdx);
                 }
                 else
@@ -580,17 +633,23 @@ public class Compiler
                         _bytecode!.Emit(OpCode.READ_DOUBLE);
                         break;
                     default:
+                        // Вкладена функція резолвиться від найближчого "батька"
+                        // до найдальшого (лексична видимість), перш ніж шукати
+                        // серед функцій верхнього рівня — інакше однойменна
+                        // вкладена в іншому місці програми могла б випадково
+                        // "перебити" ту, що справді видна звідси.
+                        string? resolvedName = ResolveFunctionName(c.FunctionName);
                         if (_builtins.Contains(c.FunctionName))
                         {
                             foreach (var arg in c.Arguments) CompileExpression(arg);
                             int nameConst = _bytecode!.AddConstant(c.FunctionName);
                             _bytecode.Emit(OpCode.CALL_NATIVE, nameConst, c.Arguments.Count);
                         }
-                        else if (_functions.ContainsKey(c.FunctionName))
+                        else if (resolvedName != null)
                         {
                             foreach (var arg in c.Arguments) CompileExpression(arg);
                             _bytecode!.Emit(OpCode.CALL, 0);
-                            _pendingCalls.Add((_bytecode.Code.Count - 2, c.FunctionName));
+                            _pendingCalls.Add((_bytecode.Code.Count - 2, resolvedName));
                         }
                         else if (_vars.ContainsKey(c.FunctionName))
                         {

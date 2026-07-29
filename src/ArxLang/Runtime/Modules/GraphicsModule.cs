@@ -1,3 +1,7 @@
+// 2D/3D графіка на Windows Forms — недоступна поза Windows, тому весь
+// файл під #if WINDOWS. Реєстрація цих функцій (Register) теж викликається
+// лише в межах #if WINDOWS у VirtualMachine.cs.
+#if WINDOWS
 using System.Windows.Forms;
 using System.Drawing;
 
@@ -176,3 +180,4 @@ public static class GraphicsModule
         return Color.FromArgb(r, g, b);
     }
 }
+#endif

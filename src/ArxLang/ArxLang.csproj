@@ -1,9 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net10.0-windows</TargetFramework>
+    <!--
+      Мова сама (лексер/парсер/компілятор/VM, майже вся стандартна
+      бібліотека) кросплатформна. GUI (guiWindow тощо) і 2D/3D-графіка
+      (createCanvas тощо) сидять на Windows Forms, який поза Windows не
+      працює — тому другий таргет net10.0-windows, а не єдиний.
+      На Linux/Mac (net10.0) ці функції просто не реєструються — скрипт,
+      який їх не використовує, працює однаково скрізь.
+    -->
+    <TargetFrameworks>net10.0-windows;net10.0</TargetFrameworks>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <UseWindowsForms>true</UseWindowsForms>
+    <UseWindowsForms Condition="'$(TargetFramework)' == 'net10.0-windows'">true</UseWindowsForms>
+    <DefineConstants Condition="'$(TargetFramework)' == 'net10.0-windows'">$(DefineConstants);WINDOWS</DefineConstants>
   </PropertyGroup>
 </Project>

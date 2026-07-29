@@ -1,7 +1,9 @@
 using ArxLang.Compiler;
 using ArxLang.Runtime;
+#if WINDOWS
 using System.Windows.Forms;
 using System.Drawing;
+#endif
 
 namespace ArxLang.VM;
 
@@ -313,7 +315,11 @@ public class VirtualMachine
             return null;
         };
 
-        // GUI
+        // GUI (Windows Forms — недоступно поза Windows, тому весь блок
+        // під #if WINDOWS; на Linux/Mac ці функції просто не реєструються,
+        // а не падають на кожному запуску незалежно від того, чи скрипт
+        // взагалі їх використовує).
+#if WINDOWS
         _nativeFunctions["guiWindow"] = args => {
             var form = new Form {
                 Text = args[0].ToString(),
@@ -387,11 +393,14 @@ public class VirtualMachine
             Application.Run(form);
             return null;
         };
+#endif
 
         // Runtime Registration (Auto-load if available)
         ArxLang.Runtime.Modules.HttpModule.Register(_nativeFunctions);
         ArxLang.Runtime.Modules.OsModule.Register(_nativeFunctions);
+#if WINDOWS
         ArxLang.Runtime.Modules.GraphicsModule.Register(_nativeFunctions);
+#endif
     }
 
     private static double PopNumVal(object val) => Convert.ToDouble(val);
@@ -676,7 +685,14 @@ public class VirtualMachine
                         var args = new object[argCount];
                         for (int i = argCount - 1; i >= 0; i--)
                             args[i] = _stack.Count > 0 ? _stack.Pop() : null!;
-                        var result = _nativeFunctions[name](args);
+                        // Компілятор реєструє gui*/canvas*-функції як "оголошені"
+                        // на всіх платформах (щоб .arx-файл однаково компілювався
+                        // скрізь), але сама реалізація доступна лише на Windows
+                        // (Windows Forms). Без цієї перевірки виклик на Linux/Mac
+                        // впав би з сирим .NET KeyNotFoundException.
+                        if (!_nativeFunctions.TryGetValue(name, out var native))
+                            throw new Exception($"Функція '{name}' недоступна на цій платформі (потребує Windows — GUI/графіка на Windows Forms)");
+                        var result = native(args);
                         // ВИПРАВЛЕНО: раніше `result ?? 0` тихо перетворював БУДЬ-ЯКЕ
                         // легітимне null-значення, повернуте нативною функцією
                         // (напр. mapGet на відсутньому ключі), на 0. Це було

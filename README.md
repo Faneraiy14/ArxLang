@@ -33,7 +33,8 @@ func main() {
 
 ## Швидкий старт
 
-Готовий `.exe`, без .NET — розділ [INSTALL.md](INSTALL.md). З вихідного коду:
+Готовий `.exe`, без .NET — розділ [INSTALL.md](INSTALL.md). З вихідного коду
+на Windows:
 
 ```bash
 dotnet build src/ArxLang
@@ -45,6 +46,16 @@ powershell -ExecutionPolicy Bypass -File install-arx.ps1
 ```bash
 arx myprogram.arx
 ```
+
+На Linux/Mac (без GUI/графіки — тільки Windows Forms підтримує їх):
+
+```bash
+dotnet build src/ArxLang -f net10.0
+dotnet src/ArxLang/bin/Debug/net10.0/ArxLang.dll myprogram.arx
+```
+
+`install-arx.ps1` — PowerShell, тільки для Windows; на Linux/Mac поки що
+запускай напряму через `dotnet ... ArxLang.dll` без встановлення в PATH.
 
 ## Що вміє мова
 
@@ -215,8 +226,10 @@ arx myprogram.arx
 - Функцію не можна оголосити (`func`) усередині тіла іншої функції — лише
   анонімні лямбди (`var f = func() {...}`). Іменовані функції — тільки
   на верхньому рівні файлу чи структури.
-- Цільова платформа — Windows: VM використовує Windows Forms для GUI
-  та графіки.
+- GUI (`guiWindow`, ...) і 2D/3D-графіка (`createCanvas`, ...) працюють
+  лише на Windows (Windows Forms). На Linux/Mac ці функції недоступні —
+  виклик дає чітку помилку часу виконання, а не крашиться. Решта мови
+  (усе, крім GUI/графіки) кросплатформна, збирається таргетом `net10.0`.
 
 ## Ліцензія
 

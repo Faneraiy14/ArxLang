@@ -13,8 +13,9 @@
 TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EXE="${ARX_EXE:-$TESTS_DIR/../src/ArxLang/bin/Debug/net10.0-windows/ArxLang.exe}"
 
-# Відкривають вікна або чекають на ввід — у автоматичному прогоні пропускаємо.
-SKIP="test_graphics2d.arx test_graphics3d.arx calculator.arx"
+# Відкривають вікна, слухають порт назавжди або чекають на ввід —
+# у автоматичному прогоні пропускаємо.
+SKIP="test_graphics2d.arx test_graphics3d.arx calculator.arx test_http_server.arx"
 
 # Тести, де помилка — очікуваний результат.
 EXPECT_ERROR="test_throw_uncaught.arx"

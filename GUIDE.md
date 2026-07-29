@@ -52,12 +52,13 @@ while (x > 0) {
 ### Структури та Методи
 ```arx
 struct Point {
-    x, y
+    x: i32
+    y: i32
 }
 
 func Point.move(dx, dy) {
-    this.x = this.x + dx
-    this.y = this.y + dy
+    self.x = self.x + dx
+    self.y = self.y + dy
 }
 
 func main() {
@@ -66,6 +67,10 @@ func main() {
     print(p.x) // 15
 }
 ```
+
+Поля структури обов'язково з типом (`x: i32`, не просто `x`), метод —
+`func Структура.метод(...)` окремо від оголошення `struct`, доступ до
+поточного екземпляра — `self`, не `this`.
 
 ### Обробка помилок (try/catch/throw)
 ```arx

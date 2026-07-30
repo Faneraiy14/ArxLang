@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Text;
 using ArxLang.AST;
 using ArxLang.Core;
@@ -14,6 +15,10 @@ namespace ArxLang.Runtime;
 //   import "lexer.arx"   — шлях до файлу, відносно поточного каталогу
 //   import "somepkg"     — ім'я пакета БЕЗ .arx: шукається в arx_modules/,
 //                          з підйомом до кореня диска (як node_modules)
+// Обидва підтримують вибірковий варіант: import "lexer.arx" { Token, scan }
+// — вливає лише перелічені функції/структури/глобальні змінні (методи
+// названої структури підтягуються автоматично). Відсутнє ім'я зі списку -
+// помилка одразу при резолві imports, ще до компіляції.
 public static class ModuleResolver
 {
     public static ProgramNode ResolveImports(ProgramNode program, string entryFilePath)
@@ -57,7 +62,10 @@ public static class ModuleResolver
 
                 var importedDir = Path.GetDirectoryName(fullPath) ?? ".";
                 var resolvedImported = Resolve(importedProgram, importedDir, visited);
-                merged.Statements.AddRange(resolvedImported.Statements);
+                var toMerge = import.Names != null
+                    ? FilterByNames(resolvedImported.Statements, import.Names, import.Path)
+                    : resolvedImported.Statements;
+                merged.Statements.AddRange(toMerge);
             }
             else
             {
@@ -66,6 +74,54 @@ public static class ModuleResolver
         }
 
         return merged;
+    }
+
+    // Вибірковий import "file.arx" { a, b }: лишає лише запитані функції/
+    // структури/глобальні змінні (за іменем), плюс методи запитаної
+    // структури (func Struct.method — повне ім'я "Struct.method", метод
+    // без структури в списку не втягується сам по собі).
+    private static List<StatementNode> FilterByNames(List<StatementNode> statements, List<string> names, string importPath)
+    {
+        var wanted = new HashSet<string>(names, StringComparer.Ordinal);
+        var found = new HashSet<string>(StringComparer.Ordinal);
+        var result = new List<StatementNode>();
+
+        foreach (var stmt in statements)
+        {
+            string? declName = stmt switch
+            {
+                FunctionDeclaration f => f.Name,
+                StructDeclaration s => s.Name,
+                VariableDeclaration v => v.Name,
+                _ => null,
+            };
+
+            if (declName != null && wanted.Contains(declName))
+            {
+                found.Add(declName);
+                result.Add(stmt);
+                continue;
+            }
+
+            if (stmt is FunctionDeclaration method && method.Name.Contains('.'))
+            {
+                var structName = method.Name[..method.Name.IndexOf('.')];
+                if (wanted.Contains(structName))
+                {
+                    result.Add(stmt);
+                    continue;
+                }
+            }
+        }
+
+        var missing = wanted.Except(found).ToList();
+        if (missing.Count > 0)
+        {
+            throw new Exception(
+                $"Вибірковий import з \"{importPath}\" не знайшов: {string.Join(", ", missing)}");
+        }
+
+        return result;
     }
 
     // ".arx" у рядку import — це шлях до конкретного файлу, як і раніше.

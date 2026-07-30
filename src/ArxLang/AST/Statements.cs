@@ -173,8 +173,15 @@ public class TryStatement : StatementNode
 public class ImportStatement : StatementNode
 {
     public string Path { get; }
-    public ImportStatement(string path) => Path = path;
-    public override string ToString(int indent = 0) => new string(' ', indent) + $"Import: {Path}";
+    // null - імпортувати все (як раніше); непорожній список - лише названі
+    // оголошення (вибірковий import "file.arx" { a, b }).
+    public List<string>? Names { get; }
+    public ImportStatement(string path, List<string>? names = null) { Path = path; Names = names; }
+    public override string ToString(int indent = 0)
+    {
+        var namesStr = Names != null ? " { " + string.Join(", ", Names) + " }" : "";
+        return new string(' ', indent) + $"Import: {Path}{namesStr}";
+    }
 }
 
 // break / continue — виходять з найближчого циклу або переходять до його

@@ -95,7 +95,23 @@ public class Parser
     {
         Advance(); // 'import'
         var pathToken = Consume(TokenType.String, "Очікується шлях до файлу (рядок) після import");
-        return new ImportStatement(pathToken.Value);
+
+        List<string>? names = null;
+        if (Peek().Type == TokenType.Punctuation && Peek().Value == "{")
+        {
+            Advance(); // '{'
+            names = new List<string>();
+            while (Peek().Type != TokenType.Punctuation || Peek().Value != "}")
+            {
+                var nameToken = Consume(TokenType.Identifier, "Очікується назва в списку вибіркового import");
+                names.Add(nameToken.Value);
+                if (Peek().Type == TokenType.Punctuation && Peek().Value == ",")
+                    Advance();
+            }
+            Consume(TokenType.Punctuation, "Очікується '}' після списку вибіркового import");
+        }
+
+        return new ImportStatement(pathToken.Value, names);
     }
 
     private StructDeclaration ParseStructDeclaration()

@@ -17,8 +17,12 @@ func main() {
         exit(1)
     }
 
-    // 33280 = GUILDS (1<<0) + GUILD_MESSAGES (1<<9) + MESSAGE_CONTENT (1<<15)
-    var intents = 33280
+    // 37377 = GUILDS (1<<0=1) + GUILD_MESSAGES (1<<9=512) +
+    // DIRECT_MESSAGES (1<<12=4096) + MESSAGE_CONTENT (1<<15=32768).
+    // DIRECT_MESSAGES обов'язково, якщо тестуєш ботом через особисті
+    // повідомлення (DM), а не в каналі сервера - без цього біта DM-подій
+    // Gateway не надсилає взагалі.
+    var intents = 37377
 
     print("Бот запускається...")
 

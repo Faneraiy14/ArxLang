@@ -167,6 +167,7 @@ func main() {
 ### Стандартна бібліотека (`lib/`)
 У теці `lib/` в корені ArxEcosystem лежать готові `.arx`-модулі — підключаються звичайним `import` за відносним шляхом (`../lib/...` з файлу в `tests/`, або `lib/...`, якщо скрипт лежить поруч із самою `lib/`):
 
+- **`lib/datetime.arx`** — арифметика дат з правильними високосними роками (алгоритм Говарда Гіннанта, чиста ArxLang): `daysFromCivil(y,m,d)`/`civilFromDays(z)` (дата <-> днів від епохи), `isLeapYear(y)`, `dayOfWeek(y,m,d)` (0=неділя), `dayName(weekday)`, `addDays(y,m,d,n)`, `diffDays(y1,m1,d1,y2,m2,d2)`, `formatDate(y,m,d)`, `parseDate(s)`, `todayCivil()`.
 - **`lib/strings.arx`** — `capitalize(s)`, `titleCase(s)`, `isBlank(s)`, `isEmpty(s)`, `padLeft(s, len, ch)`, `padRight(s, len, ch)`, `countOccurrences(s, sub)`.
 - **`lib/collections.arx`** — `range(n)`, `rangeFrom(start, end)`, `sum(arr)`, `first(arr)`, `last(arr)`, `flatten(arr)` (один рівень), `zip(arr1, arr2)`, `chunk(arr, size)`, `count(arr, fn)`.
 - **`lib/testing.arx`** — `assertTrue(cond, msg)`, `assertFalse(cond, msg)`, `assertEqual(actual, expected, msg)`, `assertThrows(fn, msg)`. Провал — звичайний `throw`, тож або лови його `try/catch` сам, або лишай непійманим, щоб процес впав з ненульовим кодом (зручно для CI).
@@ -209,7 +210,7 @@ func main() {
 
   func main() {
       var token = osEnv("DISCORD_BOT_TOKEN")
-      dPollLoop(token, 33280, func(eventName, data) {
+      dPollLoop(token, 37377, func(eventName, data) {
           if eventName == "MESSAGE_CREATE" {
               dSendMessage(token, mapGet(data, "channel_id"), "Ехо: " + mapGet(data, "content"))
           }

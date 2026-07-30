@@ -7,7 +7,8 @@
 // саме тому httpRequest отримав 4-й опційний параметр headers.
 //
 // intents - бітова маска (https://discord.com/developers/docs/topics/gateway#gateway-intents),
-// напр. 33280 = GUILDS (1) + GUILD_MESSAGES (512) + MESSAGE_CONTENT (32768).
+// напр. 37377 = GUILDS (1) + GUILD_MESSAGES (512) + DIRECT_MESSAGES (4096)
+// + MESSAGE_CONTENT (32768) - остання потрібна для DM-повідомлень боту.
 // Не забудь увімкнути "Message Content Intent" у Discord Developer Portal -
 // без нього d.content у MESSAGE_CREATE завжди порожній.
 

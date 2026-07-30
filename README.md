@@ -168,7 +168,7 @@ src/ArxLang/
 selfhosted/   інтерпретатор ArxLang, написаний на ArxLang
 bootstrap/    ранній мінімальний самохост
 tests/        тести + run_all.sh
-programs/     приклади (arxnode_dashboard — системний дашборд)
+programs/     приклади (arxnode_dashboard — системний дашборд, guess_the_number — гра "вгадай число")
 ```
 
 ## Команди

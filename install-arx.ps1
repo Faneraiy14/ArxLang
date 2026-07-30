@@ -63,3 +63,27 @@ Write-Host "    arx --version" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Якщо перезбереш проєкт — команда підхопить нову збірку сама,"
 Write-Host "бо посилається на ту саму папку."
+
+# ---- VS Code розширення (опційно) ----
+# Той самий .vsix можна поставити й окремо в будь-який момент (папка
+# vscode-arxlang в репозиторії) — тут лише зручний бонус, коли розширення
+# лежить поруч у релізі, а на комп'ютері вже є VS Code. Нічого критичного:
+# якщо VS Code нема чи щось піде не так, встановлення arx це не зупиняє.
+$vsix = Get-ChildItem -Path $scriptDir -Filter "*.vsix" -ErrorAction SilentlyContinue | Select-Object -First 1
+$codeCmd = Get-Command code -ErrorAction SilentlyContinue
+
+if ($vsix -and $codeCmd) {
+    Write-Host ""
+    Write-Host "Знайдено VS Code — ставлю розширення підсвічування ArxLang..."
+    try {
+        & code --install-extension $vsix.FullName | Out-Null
+        Write-Host "Розширення ArxLang для VS Code встановлено." -ForegroundColor Green
+    } catch {
+        Write-Host "Не вдалось встановити розширення автоматично: $_" -ForegroundColor Yellow
+        Write-Host "Постав вручну: code --install-extension `"$($vsix.FullName)`""
+    }
+} elseif ($vsix -and -not $codeCmd) {
+    Write-Host ""
+    Write-Host "VS Code не знайдено в PATH — пропускаю автоматичне встановлення розширення."
+    Write-Host "Якщо поставиш VS Code пізніше: code --install-extension `"$($vsix.FullName)`""
+}

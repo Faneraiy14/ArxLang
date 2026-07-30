@@ -30,7 +30,7 @@ public class Parser
     private StatementNode? ParseStatement()
     {
         var token = Peek();
-        return token.Type switch
+        var stmt = token.Type switch
         {
             TokenType.Keyword when token.Value == "func" => ParseFunctionDeclaration(),
             TokenType.Keyword when token.Value == "var" => ParseVariableDeclaration(),
@@ -48,6 +48,11 @@ public class Parser
             TokenType.Punctuation when token.Value == "{" => ParseBlockStatement(),
             _ => ParseExpressionStatement()
         };
+        // Один центральний штамп рядка на весь statement (не кожен вираз
+        // усередині) — досить для "у якому рядку впала помилка виконання",
+        // а не намагання відстежити кожну під-виразну позицію.
+        if (stmt != null) stmt.Line = token.Line;
+        return stmt;
     }
 
     private BreakStatement ParseBreakStatement()

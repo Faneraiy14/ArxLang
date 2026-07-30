@@ -287,6 +287,11 @@ public class Compiler
 
     private void CompileStatement(StatementNode stmt)
     {
+        // Дозволяє VirtualMachine показати номер рядка джерела при
+        // Runtime Error — раніше помилки виконання (на відміну від
+        // помилок парсингу) взагалі не казали, ДЕ в скрипті стались.
+        if (stmt.Line > 0) _bytecode!.MarkLine(stmt.Line);
+
         switch (stmt)
         {
             case FunctionDeclaration f:

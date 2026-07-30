@@ -54,5 +54,20 @@ public class Bytecode
         return Constants.Count - 1;
     }
 
+    // Розріджена мапа "з якого байтового зсуву починається який рядок
+    // джерела" — не по інструкції (це роздуло б байткод), а лише в
+    // точках, де Compiler.cs переходить до компіляції нового statement.
+    // Відсортована за зростанням Offset за побудовою (компілюємо
+    // послідовно), тож VirtualMachine шукає останній запис з Offset <= IP.
+    public List<(int Offset, int Line)> LineMap { get; } = new();
+
+    public void MarkLine(int line)
+    {
+        // Кілька виразів в одному рядку джерела не повинні плодити
+        // дублікати підряд — лише РЕАЛЬНА зміна рядка вартує запису.
+        if (LineMap.Count > 0 && LineMap[^1].Line == line) return;
+        LineMap.Add((Code.Count, line));
+    }
+
     public byte[] ToArray() => Code.ToArray();
 }

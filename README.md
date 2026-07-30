@@ -71,7 +71,7 @@ dotnet src/ArxLang/bin/Debug/net10.0/ArxLang.dll myprogram.arx
 | Цикли | `for i in 0..10`, `for x in arr`, `while` |
 | `break` / `continue` | працюють у всіх циклах, зокрема вкладених |
 | Кирилиця в іменах | `func привітати(імя) { ... }` |
-| Помилки | `try { ... } catch (e) { ... }`, `throw` |
+| Помилки | `try { ... } catch (e) { ... }`, `throw`, повідомлення містять номер рядка |
 | Модулі | `import "helpers.arx"` |
 | Вищий порядок | `mapArr`, `filter`, `reduce`, `sort` |
 | GC-інструментарій | `gc_stats()`, `gc_collect()`, `gc_limit(n)` |

@@ -477,16 +477,32 @@ public class VirtualMachine
     // Різниця непомітна на цілих числах і виринає лише на дробових аргументах.
     private static int TruncToInt(object val) => (int)Convert.ToDouble(val);
 
+    private readonly List<(int Offset, int Line)> _lineMap;
+
     public VirtualMachine(Bytecode bytecode)
     {
         _code = bytecode.ToArray();
         _constants = bytecode.Constants;
         _functionAddresses = bytecode.FunctionAddresses;
+        _lineMap = bytecode.LineMap;
     }
 
     // Дозволяє нативним функціям (sort/mapArr/filter/reduce тощо) знайти
     // поточну VM і викликати ArxLang-функцію-значення як колбек.
     public static VirtualMachine? Current;
+
+    // Останній запис у _lineMap з Offset <= поточного _ip. _lineMap
+    // відсортована за зростанням Offset (компілюється послідовно), тому
+    // проходимо з кінця й беремо перший підходящий — просте О(n), для
+    // помилки виконання (не гарячий шлях) цього достатньо.
+    private int CurrentLine()
+    {
+        for (int i = _lineMap.Count - 1; i >= 0; i--)
+        {
+            if (_lineMap[i].Offset <= _ip) return _lineMap[i].Line;
+        }
+        return -1;
+    }
 
     public void Run()
     {
@@ -496,7 +512,20 @@ public class VirtualMachine
 
         while (_ip < _code.Length)
         {
-            if (!Step()) return;
+            try
+            {
+                if (!Step()) return;
+            }
+            // _handlers.Count == 0 тут означає "жоден ArxLang try/catch це
+            // не зловить" — той самий виняток однаково вилетить з Run()
+            // необробленим, тож маємо єдиний шанс додати номер рядка,
+            // перш ніж повідомлення дійде до ArxNode.cs як "Runtime Error".
+            catch (Exception ex) when (_handlers.Count == 0)
+            {
+                int line = CurrentLine();
+                string prefix = line > 0 ? $"рядок {line}: " : "";
+                throw new Exception(prefix + ex.Message, ex);
+            }
         }
     }
 
@@ -902,8 +931,12 @@ public class VirtualMachine
             {
                 // Внутрішня помилка VM (ділення на нуль, вихід за межі масиву,
                 // помилка нативної функції тощо) під час активного try —
-                // перехоплюємо її так само, як явний throw.
-                UnwindToHandler(ex.Message);
+                // перехоплюємо її так само, як явний throw. Номер рядка тут
+                // так само корисний, як і в необробленому Runtime Error —
+                // catch(e) у самому ArxLang-скрипті теж хоче знати ДЕ.
+                int line = CurrentLine();
+                string prefix = line > 0 ? $"рядок {line}: " : "";
+                UnwindToHandler(prefix + ex.Message);
             }
         return true;
     }

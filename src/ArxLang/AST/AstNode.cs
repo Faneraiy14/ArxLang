@@ -17,5 +17,12 @@ public class ProgramNode : AstNode
     }
 }
 
-public abstract class StatementNode : AstNode { }
+public abstract class StatementNode : AstNode
+{
+    // Рядок вихідного файлу, з якого почався цей statement — Parser
+    // проставляє це один раз, у центральному ParseStatement(), а не в
+    // кожному окремому ParseXxxStatement(): так номер рядка гарантовано
+    // є на КОЖНОМУ statement-вузлі без ризику забути десь одну гілку.
+    public int Line { get; set; }
+}
 public abstract class ExpressionNode : AstNode { }

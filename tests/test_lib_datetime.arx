@@ -1,0 +1,47 @@
+import "../lib/datetime.arx" { daysFromCivil, civilFromDays, isLeapYear, dayOfWeek, dayName, addDays, diffDays, formatDate, parseDate }
+import "../lib/testing.arx" { assertEqual, assertTrue, assertFalse }
+
+func main() {
+    // Еталонні значення (перевірені окремо через довідкові дати епохи Unix)
+    assertEqual(daysFromCivil(1970, 1, 1), 0, "епоха 1970-01-01 = день 0")
+    assertEqual(daysFromCivil(1969, 12, 31), -1, "день перед епохою = -1")
+    assertEqual(daysFromCivil(2000, 3, 1), 11017, "відома контрольна дата з алгоритму Гіннанта")
+    assertEqual(daysFromCivil(2024, 2, 29), 19782, "29 лютого високосного 2024 існує")
+
+    // civilFromDays - обернена функція, має повертати той самий рік/місяць/день
+    var back = civilFromDays(daysFromCivil(2026, 7, 30))
+    assertEqual(back[0], 2026, "civilFromDays повертає правильний рік")
+    assertEqual(back[1], 7, "civilFromDays повертає правильний місяць")
+    assertEqual(back[2], 30, "civilFromDays повертає правильний день")
+
+    assertTrue(isLeapYear(2000), "2000 високосний (ділиться на 400)")
+    assertFalse(isLeapYear(1900), "1900 НЕ високосний (ділиться на 100, але не на 400)")
+    assertTrue(isLeapYear(2024), "2024 високосний (ділиться на 4, не на 100)")
+    assertFalse(isLeapYear(2023), "2023 не високосний")
+
+    // 1970-01-04 - неділя (епоха 1970-01-01 - четвер)
+    assertEqual(dayOfWeek(1970, 1, 4), 0, "1970-01-04 - неділя")
+    assertEqual(dayOfWeek(1970, 1, 1), 4, "1970-01-01 - четвер")
+    assertEqual(dayName(0), "Неділя", "dayName(0) - Неділя")
+
+    var newYear = addDays(2024, 12, 31, 1)
+    assertEqual(newYear[0], 2025, "addDays переходить у наступний рік")
+    assertEqual(newYear[1], 1, "addDays переходить у січень")
+    assertEqual(newYear[2], 1, "addDays дає 1 число")
+
+    var beforeYear = addDays(2025, 1, 1, -1)
+    assertEqual(beforeYear[0], 2024, "addDays(-1) повертається в попередній рік")
+    assertEqual(beforeYear[2], 31, "addDays(-1) дає 31 грудня")
+
+    assertEqual(diffDays(2024, 1, 1, 2024, 12, 31), 365, "diffDays за невисокосний... 2024 високосний - 366")
+    assertEqual(diffDays(2023, 1, 1, 2023, 12, 31), 364, "diffDays 2023-01-01..2023-12-31 = 364 дні різниці")
+
+    assertEqual(formatDate(2026, 7, 5), "2026-07-05", "formatDate доповнює нулями")
+
+    var parsed = parseDate("2026-07-30")
+    assertEqual(parsed[0], 2026, "parseDate рік")
+    assertEqual(parsed[1], 7, "parseDate місяць")
+    assertEqual(parsed[2], 30, "parseDate день")
+
+    print("усі перевірки lib/datetime.arx пройдено")
+}

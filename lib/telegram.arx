@@ -1,0 +1,72 @@
+// lib/telegram.arx — обгортка над Telegram Bot API (https://core.telegram.org/bots/api).
+// API самого Telegram — звичайний HTTPS+JSON, без WebSocket, тож повністю
+// реалізується через наявні httpGet/httpPost/toJson/fromJson без жодного
+// нового нативного коду. token НІКОЛИ не хардкодь у скрипті — читай через
+// osEnv("TELEGRAM_BOT_TOKEN"), як у прикладі programs/telegram_echo_bot.arx.
+
+// Усюди тут httpRequest, НЕ httpGet/httpPost: Telegram повертає корисне
+// JSON-тіло помилки навіть на 4xx (напр. {"ok":false,"description":"..."}
+// при невірному токені), а httpGet/httpPost кидають виняток на будь-якому
+// коду поза 2xx ще ДО того, як тіло можна прочитати - httpRequest тіла
+// не втрачає ні на якому статус-коді.
+
+func tgGetMe(token) {
+    var res = httpRequest("https://api.telegram.org/bot" + token + "/getMe", "GET", null)
+    return fromJson(mapGet(res, "body"))
+}
+
+func tgSendMessage(token, chatId, text) {
+    var data = newMap()
+    mapSet(data, "chat_id", chatId)
+    mapSet(data, "text", text)
+    var url = "https://api.telegram.org/bot" + token + "/sendMessage"
+    var res = httpRequest(url, "POST", toJson(data))
+    return fromJson(mapGet(res, "body"))
+}
+
+// offset - update_id останнього вже обробленого апдейту + 1 (щоб Telegram
+// не присилав його вдруге); timeout=30 - long polling: запит "висить" до
+// 30с, доки не з'явиться нове повідомлення, замість миттєвого порожнього
+// результату (це й відрізняє поллінг від грубого опитування щосекунди).
+func tgGetUpdates(token, offset) {
+    var url = "https://api.telegram.org/bot" + token + "/getUpdates?offset=" + toString(offset) + "&timeout=30"
+    var res = httpRequest(url, "GET", null)
+    var parsed = fromJson(mapGet(res, "body"))
+    return mapGet(parsed, "result")
+}
+
+// message може бути відсутнім в апдейті (напр. edited_message,
+// callback_query) - тоді повертає null, а не падає.
+func tgMessageText(update) {
+    var message = mapGet(update, "message")
+    if isNull(message) {
+        return null
+    }
+    return mapGet(message, "text")
+}
+
+func tgChatId(update) {
+    var message = mapGet(update, "message")
+    if isNull(message) {
+        return null
+    }
+    var chat = mapGet(message, "chat")
+    return mapGet(chat, "id")
+}
+
+// Блокує назавжди (як httpServer): на кожен новий апдейт викликає
+// handler(update) і сам просуває offset - викликач лише обробляє логіку
+// одного повідомлення, не думаючи про паги/офсети.
+func tgPollLoop(token, handler) {
+    var offset = 0
+    while true {
+        var updates = tgGetUpdates(token, offset)
+        var i = 0
+        while i < len(updates) {
+            var update = updates[i]
+            handler(update)
+            offset = mapGet(update, "update_id") + 1
+            i = i + 1
+        }
+    }
+}

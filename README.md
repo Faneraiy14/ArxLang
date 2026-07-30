@@ -169,7 +169,7 @@ selfhosted/   інтерпретатор ArxLang, написаний на ArxLan
 bootstrap/    ранній мінімальний самохост
 tests/        тести + run_all.sh
 programs/     приклади (arxnode_dashboard — системний дашборд, guess_the_number — гра "вгадай число")
-lib/          стандартна бібліотека .arx-модулів (testing.arx, http_client.arx) — підключаються через import
+lib/          стандартна бібліотека .arx-модулів (testing.arx, http_client.arx, telegram.arx) — підключаються через import
 ```
 
 ## Команди

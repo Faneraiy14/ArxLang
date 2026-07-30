@@ -187,6 +187,21 @@ func main() {
       print(toJson(response))
   }
   ```
+- **`lib/telegram.arx`** — обгортка над [Telegram Bot API](https://core.telegram.org/bots/api) (звичайний HTTPS+JSON, без WebSocket - тому повністю реалізований на самій ArxLang): `tgGetMe(token)`, `tgSendMessage(token, chatId, text)`, `tgGetUpdates(token, offset)`, `tgMessageText(update)`, `tgChatId(update)`, і блокуючий `tgPollLoop(token, handler)` для готового бота одним викликом. Токен читай через `osEnv("TELEGRAM_BOT_TOKEN")`, ніколи не хардкодь у скрипті. Повний робочий приклад ехо-бота: `programs/telegram_echo_bot.arx`.
+  ```arx
+  import "lib/telegram.arx" { tgPollLoop, tgMessageText, tgChatId, tgSendMessage }
+
+  func main() {
+      var token = osEnv("TELEGRAM_BOT_TOKEN")
+      tgPollLoop(token, func(update) {
+          var text = tgMessageText(update)
+          if !isNull(text) {
+              tgSendMessage(token, tgChatId(update), "Ехо: " + text)
+          }
+      })
+  }
+  ```
+  Discord поки НЕ підтримується так само просто: реальний Discord-бот приймає повідомлення через WebSocket-з'єднання (Gateway), якого в ArxLang немає - це окрема, важча нативна фіча (постійне з'єднання, heartbeat), не просто HTTP-обгортка.
 
 ### Функції вищого порядку та JSON
 ```arx

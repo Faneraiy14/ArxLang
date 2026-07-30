@@ -1,0 +1,30 @@
+// Приклад: ехо-бот на Telegram, написаний ЧИСТОЮ ArxLang (lib/telegram.arx).
+// Запуск: TELEGRAM_BOT_TOKEN=токен_від_BotFather arx programs/telegram_echo_bot.arx
+// Токен НІКОЛИ не хардкодиться тут - читається з середовища, щоб не потрапив
+// у git разом зі скриптом.
+import "../lib/telegram.arx" { tgGetMe, tgSendMessage, tgPollLoop, tgMessageText, tgChatId }
+
+func main() {
+    var token = osEnv("TELEGRAM_BOT_TOKEN")
+    if token == "" {
+        print("Встанови змінну середовища TELEGRAM_BOT_TOKEN (токен від @BotFather) перед запуском")
+        exit(1)
+    }
+
+    var me = tgGetMe(token)
+    if !mapGet(me, "ok") {
+        print("Не вдалось авторизуватись: " + toJson(me))
+        exit(1)
+    }
+    var botInfo = mapGet(me, "result")
+    print("Бот запущено: @" + mapGet(botInfo, "username"))
+
+    tgPollLoop(token, func(update) {
+        var text = tgMessageText(update)
+        var chatId = tgChatId(update)
+        if !isNull(text) {
+            print("Отримано від " + toString(chatId) + ": " + text)
+            tgSendMessage(token, chatId, "Ехо: " + text)
+        }
+    })
+}

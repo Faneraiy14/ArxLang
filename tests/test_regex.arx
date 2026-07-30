@@ -1,0 +1,15 @@
+func main() {
+    print(regexTest("hello@world.com", "^[\\w.]+@[\\w.]+$"))   // true
+    print(regexTest("not-an-email", "^[\\w.]+@[\\w.]+$"))       // false
+
+    print(regexMatch("вік: 42 роки", "\\d+"))                   // 42
+    print(regexMatch("нема чисел тут", "\\d+"))                  // null
+
+    var nums = regexFindAll("a1 b22 c333", "\\d+")
+    print(len(nums))          // 3
+    print(nums[0])            // 1
+    print(nums[1])            // 22
+    print(nums[2])            // 333
+
+    print(regexReplace("2026-07-30", "-", "/"))                 // 2026/07/30
+}

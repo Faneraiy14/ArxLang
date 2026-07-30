@@ -164,6 +164,30 @@ func main() {
 ```
 Методи названої структури підтягуються автоматично разом з нею. Якщо переліченого імені нема у файлі — помилка одразу при запуску (ще до виконання коду).
 
+### Стандартна бібліотека (`lib/`)
+У теці `lib/` в корені ArxEcosystem лежать готові `.arx`-модулі — підключаються звичайним `import` за відносним шляхом (`../lib/...` з файлу в `tests/`, або `lib/...`, якщо скрипт лежить поруч із самою `lib/`):
+
+- **`lib/testing.arx`** — `assertTrue(cond, msg)`, `assertFalse(cond, msg)`, `assertEqual(actual, expected, msg)`, `assertThrows(fn, msg)`. Провал — звичайний `throw`, тож або лови його `try/catch` сам, або лишай непійманим, щоб процес впав з ненульовим кодом (зручно для CI).
+  ```arx
+  import "lib/testing.arx" { assertEqual }
+
+  func main() {
+      assertEqual(2 + 2, 4, "2+2 має дорівнювати 4")
+      print("тест пройдено")
+  }
+  ```
+- **`lib/http_client.arx`** — обгортка над `httpGet`/`httpPost`/`httpRequest` з автоматичною JSON-серіалізацією (у дусі Python-бібліотеки `requests`): `getJson(url)`, `postJson(url, data)`, `requestJson(url, method, data)` (`data` — мапа/масив або `null`), `requestStatus(url, method, data)` — лише код статусу.
+  ```arx
+  import "lib/http_client.arx" { postJson }
+
+  func main() {
+      var data = newMap()
+      mapSet(data, "name", "Святослав")
+      var response = postJson("https://httpbin.org/post", data)
+      print(toJson(response))
+  }
+  ```
+
 ### Функції вищого порядку та JSON
 ```arx
 var nums = [5, 2, 8, 1]
@@ -227,7 +251,10 @@ closeCanvas(canvas)
 - `randomInt(min,max)`, `randomDouble(min,max)`, `now()`, `today()`, `timestamp()` - утиліти
 - `osPlatform()`, `osArchitecture()`, `osMemory()`, `osCpuCount()`, `osEnv(name)`, `osCwd()` - інформація про систему
 - `httpGet(url)`, `urlStatus(url)` - HTTP-запити
+- `httpPost(url, body)` - POST-запит з тілом `body` (Content-Type `application/json`), повертає тіло відповіді рядком
+- `httpRequest(url, method, body?)` - запит довільним методом (`"PUT"`, `"DELETE"`, `"PATCH"` тощо), повертає мапу `{status, body}`
 - `httpServer(port, handler)` - HTTP-сервер; `handler(path, method)` викликається на кожен запит і повертає рядок тіла відповіді. Блокує назавжди (Ctrl+C для зупинки)
+- `regexTest(s, pattern)` - чи збігається рядок з regex-шаблоном (bool); `regexMatch(s, pattern)` - перший збіг або `null`; `regexFindAll(s, pattern)` - масив усіх збігів; `regexReplace(s, pattern, replacement)` - заміна всіх збігів
 - `guiWindow(title, w, h)`, `guiButton(text, x, y, w, h)`, `guiShow(win)` - GUI (експериментально)
 
 ## Як запустити

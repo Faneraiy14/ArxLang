@@ -473,6 +473,7 @@ public class VirtualMachine
         // Runtime Registration (Auto-load if available)
         ArxLang.Runtime.Modules.HttpModule.Register(_nativeFunctions);
         ArxLang.Runtime.Modules.OsModule.Register(_nativeFunctions);
+        ArxLang.Runtime.Modules.RegexModule.Register(_nativeFunctions);
 #if WINDOWS
         ArxLang.Runtime.Modules.GraphicsModule.Register(_nativeFunctions);
 #endif

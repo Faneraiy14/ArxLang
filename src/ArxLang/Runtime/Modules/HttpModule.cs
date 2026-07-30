@@ -11,6 +11,8 @@ public static class HttpModule
         registry["httpServer"] = CreateServer;
         registry["httpGet"] = HttpGet;
         registry["urlStatus"] = UrlStatus;
+        registry["httpPost"] = HttpPost;
+        registry["httpRequest"] = HttpRequest;
     }
 
     private static object? UrlStatus(object[] args)
@@ -87,5 +89,43 @@ public static class HttpModule
         string url = args[0].ToString()!;
         using var client = new HttpClient();
         return client.GetStringAsync(url).GetAwaiter().GetResult();
+    }
+
+    // httpPost(url, body) — тіло POST-запиту як рядок, за замовчуванням
+    // application/json (найчастіший випадок - надіслати JSON у REST API/
+    // вебхук). Повертає лише тіло відповіді, як httpGet, для найпростішого
+    // "надіслати й прочитати" сценарію без потреби перевіряти статус-код.
+    private static object? HttpPost(object[] args)
+    {
+        string url = args[0].ToString()!;
+        string body = args.Length > 1 ? args[1]?.ToString() ?? "" : "";
+        using var client = new HttpClient();
+        using var content = new StringContent(body, Encoding.UTF8, "application/json");
+        var response = client.PostAsync(url, content).GetAwaiter().GetResult();
+        return response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+    }
+
+    // httpRequest(url, method, body?) — довільний HTTP-метод (PUT/DELETE/
+    // PATCH тощо), на відміну від httpGet/httpPost, повертає МАПУ
+    // {status, body}, бо для довільних методів код відповіді зазвичай
+    // важливіший за саме тіло (204 No Content, 404 тощо).
+    private static object? HttpRequest(object[] args)
+    {
+        string url = args[0].ToString()!;
+        string method = args.Length > 1 ? args[1]?.ToString()?.ToUpperInvariant() ?? "GET" : "GET";
+        string body = args.Length > 2 ? args[2]?.ToString() ?? "" : "";
+
+        using var client = new HttpClient();
+        using var request = new HttpRequestMessage(new HttpMethod(method), url);
+        if (!string.IsNullOrEmpty(body))
+            request.Content = new StringContent(body, Encoding.UTF8, "application/json");
+
+        var response = client.SendAsync(request).GetAwaiter().GetResult();
+        string responseBody = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+
+        var map = new ArxMap();
+        map.Entries["status"] = (double)(int)response.StatusCode;
+        map.Entries["body"] = responseBody;
+        return map;
     }
 }

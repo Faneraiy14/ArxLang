@@ -269,7 +269,8 @@ closeCanvas(canvas)
 - `osPlatform()`, `osArchitecture()`, `osMemory()`, `osCpuCount()`, `osEnv(name)`, `osCwd()` - інформація про систему
 - `httpGet(url)`, `urlStatus(url)` - HTTP-запити
 - `httpPost(url, body)` - POST-запит з тілом `body` (Content-Type `application/json`), повертає тіло відповіді рядком
-- `httpRequest(url, method, body?)` - запит довільним методом (`"PUT"`, `"DELETE"`, `"PATCH"` тощо), повертає мапу `{status, body}`
+- `httpRequest(url, method, body?, headers?)` - запит довільним методом (`"PUT"`, `"DELETE"`, `"PATCH"` тощо), повертає мапу `{status, body}`; `headers` - мапа (`newMap`/`mapSet`) для заголовків на кшталт `Authorization`
+- `wsConnect(url)` - відкриває WebSocket-з'єднання (`wss://`/`ws://`); `wsSend(ws, text)` - надсилає текстове повідомлення; `wsReceive(ws, timeoutMs?)` - блокує до наступного повідомлення або тайм-ауту (тоді повертає `null`); кидає помилку (лови через `try/catch`), якщо з'єднання розірване сервером; `wsClose(ws)` - закриває з'єднання
 - `httpServer(port, handler)` - HTTP-сервер; `handler(path, method)` викликається на кожен запит і повертає рядок тіла відповіді. Блокує назавжди (Ctrl+C для зупинки)
 - `regexTest(s, pattern)` - чи збігається рядок з regex-шаблоном (bool); `regexMatch(s, pattern)` - перший збіг або `null`; `regexFindAll(s, pattern)` - масив усіх збігів; `regexReplace(s, pattern, replacement)` - заміна всіх збігів
 - `guiWindow(title, w, h)`, `guiButton(text, x, y, w, h)`, `guiShow(win)` - GUI (експериментально)

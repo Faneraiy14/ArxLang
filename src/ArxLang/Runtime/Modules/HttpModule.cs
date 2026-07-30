@@ -105,20 +105,35 @@ public static class HttpModule
         return response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
     }
 
-    // httpRequest(url, method, body?) — довільний HTTP-метод (PUT/DELETE/
-    // PATCH тощо), на відміну від httpGet/httpPost, повертає МАПУ
-    // {status, body}, бо для довільних методів код відповіді зазвичай
-    // важливіший за саме тіло (204 No Content, 404 тощо).
+    // httpRequest(url, method, body?, headers?) — довільний HTTP-метод
+    // (PUT/DELETE/PATCH тощо), на відміну від httpGet/httpPost, повертає
+    // МАПУ {status, body}, бо для довільних методів код відповіді зазвичай
+    // важливіший за саме тіло (204 No Content, 404 тощо). headers - мапа
+    // (newMap/mapSet), потрібна для API з авторизацією через заголовок
+    // (напр. Discord REST: "Authorization" -> "Bot <token>"), а не в URL,
+    // як у Telegram.
     private static object? HttpRequest(object[] args)
     {
         string url = args[0].ToString()!;
         string method = args.Length > 1 ? args[1]?.ToString()?.ToUpperInvariant() ?? "GET" : "GET";
         string body = args.Length > 2 ? args[2]?.ToString() ?? "" : "";
+        var headers = args.Length > 3 ? args[3] as ArxMap : null;
 
         using var client = new HttpClient();
         using var request = new HttpRequestMessage(new HttpMethod(method), url);
         if (!string.IsNullOrEmpty(body))
             request.Content = new StringContent(body, Encoding.UTF8, "application/json");
+
+        if (headers != null)
+        {
+            foreach (var kv in headers.Entries)
+            {
+                string key = kv.Key?.ToString() ?? "";
+                string value = kv.Value?.ToString() ?? "";
+                if (!request.Headers.TryAddWithoutValidation(key, value))
+                    request.Content?.Headers.TryAddWithoutValidation(key, value);
+            }
+        }
 
         var response = client.SendAsync(request).GetAwaiter().GetResult();
         string responseBody = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();

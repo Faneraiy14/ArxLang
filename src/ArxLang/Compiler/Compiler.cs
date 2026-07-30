@@ -91,6 +91,7 @@ public class Compiler
         "osPlatform", "osArchitecture", "osMemory", "osCpuCount", "osEnv", "osCwd",
         "httpServer", "httpGet", "urlStatus", "httpPost", "httpRequest",
         "regexTest", "regexMatch", "regexFindAll", "regexReplace",
+        "wsConnect", "wsSend", "wsReceive", "wsClose",
         "createCanvas", "clearCanvas", "drawRect", "drawCircle", "drawLine", "drawText",
         "presentCanvas", "canvasShouldClose", "closeCanvas",
         "isKeyDown", "isMouseDown", "getMouseX", "getMouseY", "project3D",

@@ -474,6 +474,7 @@ public class VirtualMachine
         ArxLang.Runtime.Modules.HttpModule.Register(_nativeFunctions);
         ArxLang.Runtime.Modules.OsModule.Register(_nativeFunctions);
         ArxLang.Runtime.Modules.RegexModule.Register(_nativeFunctions);
+        ArxLang.Runtime.Modules.WebSocketModule.Register(_nativeFunctions);
 #if WINDOWS
         ArxLang.Runtime.Modules.GraphicsModule.Register(_nativeFunctions);
 #endif

@@ -203,7 +203,20 @@ func main() {
       })
   }
   ```
-  Discord поки НЕ підтримується так само просто: реальний Discord-бот приймає повідомлення через WebSocket-з'єднання (Gateway), якого в ArxLang немає - це окрема, важча нативна фіча (постійне з'єднання, heartbeat), не просто HTTP-обгортка.
+- **`lib/discord.arx`** — мінімальний [Discord Gateway](https://discord.com/developers/docs/topics/gateway)-клієнт: `dSendMessage(token, channelId, text)` (REST), і блокуючий `dPollLoop(token, intents, handler)` — сам робить handshake (Hello -> Identify -> heartbeat за розкладом сервера) через нативний `wsConnect`/`wsSend`/`wsReceive`, `handler(eventName, data)` викликається на кожну подію (`"MESSAGE_CREATE"`, `"READY"` тощо). На розрив з'єднання сервером (напр. невірний токен - код 4004) виходить з циклу з чітким повідомленням, а не зависає чи падає. Токен - через `osEnv("DISCORD_BOT_TOKEN")`. Повний приклад: `programs/discord_echo_bot.arx`.
+  ```arx
+  import "lib/discord.arx" { dPollLoop, dSendMessage }
+
+  func main() {
+      var token = osEnv("DISCORD_BOT_TOKEN")
+      dPollLoop(token, 33280, func(eventName, data) {
+          if eventName == "MESSAGE_CREATE" {
+              dSendMessage(token, mapGet(data, "channel_id"), "Ехо: " + mapGet(data, "content"))
+          }
+      })
+  }
+  ```
+  Не забудь увімкнути "Message Content Intent" у Discord Developer Portal - без нього `content` завжди порожній.
 
 ### Функції вищого порядку та JSON
 ```arx

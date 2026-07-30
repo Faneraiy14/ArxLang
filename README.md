@@ -161,15 +161,15 @@ src/ArxLang/
   Core/       Lexer.cs, Parser.cs, Token.cs
   AST/        вузли дерева
   Compiler/   Compiler.cs, Bytecode.cs
-  VM/         VirtualMachine.cs — виконання + 126 нативних функцій
-  Runtime/    ArxMap, ArxJson, ArxFunctionRef, модулі Http/Os/Graphics/Regex
+  VM/         VirtualMachine.cs — виконання + 130 нативних функцій
+  Runtime/    ArxMap, ArxJson, ArxFunctionRef, модулі Http/Os/Graphics/Regex/WebSocket
   Tools/      Formatter.cs, Linter.cs
 
 selfhosted/   інтерпретатор ArxLang, написаний на ArxLang
 bootstrap/    ранній мінімальний самохост
 tests/        тести + run_all.sh
 programs/     приклади (arxnode_dashboard — системний дашборд, guess_the_number — гра "вгадай число")
-lib/          стандартна бібліотека .arx-модулів (strings, collections, testing, http_client, telegram) — підключаються через import
+lib/          стандартна бібліотека .arx-модулів (strings, collections, testing, http_client, telegram, discord) — підключаються через import
 ```
 
 ## Команди

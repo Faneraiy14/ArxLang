@@ -1,0 +1,44 @@
+// Приклад: ехо-бот на Discord, написаний ЧИСТОЮ ArxLang (lib/discord.arx).
+// Запуск: DISCORD_BOT_TOKEN=токен_бота arx programs/discord_echo_bot.arx
+// Токен НІКОЛИ не хардкодиться тут - читається з середовища.
+//
+// Перед запуском у Discord Developer Portal (discord.com/developers/applications):
+//   1. створи Application -> Bot, скопіюй токен
+//   2. увімкни "Message Content Intent" (Bot -> Privileged Gateway Intents) -
+//      без нього d.content у MESSAGE_CREATE завжди порожній
+//   3. запроси бота на сервер через OAuth2 URL Generator (scope "bot",
+//      permission "Send Messages"/"Read Message History")
+import "../lib/discord.arx" { dPollLoop, dSendMessage }
+
+func main() {
+    var token = osEnv("DISCORD_BOT_TOKEN")
+    if token == "" {
+        print("Встанови змінну середовища DISCORD_BOT_TOKEN перед запуском")
+        exit(1)
+    }
+
+    // 33280 = GUILDS (1<<0) + GUILD_MESSAGES (1<<9) + MESSAGE_CONTENT (1<<15)
+    var intents = 33280
+
+    print("Бот запускається...")
+
+    dPollLoop(token, intents, func(eventName, data) {
+        if eventName == "READY" {
+            print("Бот увійшов у мережу")
+        } else if eventName == "MESSAGE_CREATE" {
+            var author = mapGet(data, "author")
+            var isBot = mapGet(author, "bot")
+            var text = mapGet(data, "content")
+            var channelId = mapGet(data, "channel_id")
+
+            // ігноруємо повідомлення від інших ботів (і від самого себе) -
+            // інакше два еховані боти на одному каналі зациклили б один одного.
+            // isBot може бути null (Discord часто не додає "bot" звичайним
+            // користувачам) - тому порівняння з true, а не заперечення null.
+            if isBot != true && text != "" {
+                print("Отримано в каналі " + toString(channelId) + ": " + text)
+                dSendMessage(token, channelId, "Ехо: " + text)
+            }
+        }
+    })
+}

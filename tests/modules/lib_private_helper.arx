@@ -1,0 +1,7 @@
+func publicFn(x) {
+    return _helper(x) + 1
+}
+
+func _helper(x) {
+    return x * 2
+}

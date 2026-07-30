@@ -79,7 +79,12 @@ public static class ModuleResolver
     // Вибірковий import "file.arx" { a, b }: лишає лише запитані функції/
     // структури/глобальні змінні (за іменем), плюс методи запитаної
     // структури (func Struct.method — повне ім'я "Struct.method", метод
-    // без структури в списку не втягується сам по собі).
+    // без структури в списку не втягується сам по собі), плюс БУДЬ-ЯКУ
+    // функцію з іменем на "_" — приватний хелпер модуля (конвенція, як
+    // Python _private): дописана публічна функція, яка сама викликає такий
+    // хелпер (lib/discord.arx: dPollLoop -> _dIdentify/_dHeartbeat), інакше
+    // ламалась би при вибірковому імпорті лише публічного імені — ніхто ж
+    // не буде (і не повинен) перелічувати "_dIdentify" у списку import.
     private static List<StatementNode> FilterByNames(List<StatementNode> statements, List<string> names, string importPath)
     {
         var wanted = new HashSet<string>(names, StringComparer.Ordinal);
@@ -95,6 +100,12 @@ public static class ModuleResolver
                 VariableDeclaration v => v.Name,
                 _ => null,
             };
+
+            if (declName != null && declName.StartsWith('_'))
+            {
+                result.Add(stmt);
+                continue;
+            }
 
             if (declName != null && wanted.Contains(declName))
             {

@@ -33,29 +33,33 @@ func main() {
 
 ## Швидкий старт
 
-Готовий `.exe`, без .NET — розділ [INSTALL.md](INSTALL.md). З вихідного коду
-на Windows:
+Готовий бінарник (без .NET) — розділ [INSTALL.md](INSTALL.md), є для Windows,
+Linux і Mac. З вихідного коду (потрібен [.NET SDK 10](https://dotnet.microsoft.com/download),
+крос-платформний):
 
 ```bash
 dotnet build src/ArxLang
+```
+
+Windows:
+
+```powershell
 powershell -ExecutionPolicy Bypass -File install-arx.ps1
 ```
 
-Після цього — нове вікно термінала і:
+Linux/Mac (без GUI/графіки — тільки Windows Forms підтримує їх, решта мови
+працює однаково):
+
+```bash
+bash install-arx.sh
+```
+
+Обидва скрипти самі знаходять зібраний бінарник у `src/ArxLang/bin/.../publish/`
+і реєструють глобальну команду `arx`. Після цього — нове вікно термінала і:
 
 ```bash
 arx myprogram.arx
 ```
-
-На Linux/Mac (без GUI/графіки — тільки Windows Forms підтримує їх):
-
-```bash
-dotnet build src/ArxLang -f net10.0
-dotnet src/ArxLang/bin/Debug/net10.0/ArxLang.dll myprogram.arx
-```
-
-`install-arx.ps1` — PowerShell, тільки для Windows; на Linux/Mac поки що
-запускай напряму через `dotnet ... ArxLang.dll` без встановлення в PATH.
 
 ## Що вміє мова
 
@@ -232,7 +236,7 @@ func main() {
 
 ```bash
 cd selfhosted
-../src/ArxLang/bin/Debug/net10.0-windows/ArxLang.exe main.arx
+arx main.arx
 ```
 
 Очікуваний вивід: `720 / 5 / 100 / 30 / 1 2 3 / 256 / ПРИВІТ` — рекурсія,

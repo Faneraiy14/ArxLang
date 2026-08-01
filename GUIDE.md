@@ -290,9 +290,10 @@ closeCanvas(canvas)
 - `guiWindow(title, w, h)`, `guiButton(text, x, y, w, h)`, `guiShow(win)` - GUI (експериментально)
 
 ## Як запустити
-Використовуйте ArxLang.exe та передайте шлях до файлу:
-`ArxLang.exe program.arx`
+Після встановлення (див. INSTALL.md) команда `arx` доступна на будь-якій
+платформі (Windows/Linux/Mac) — передайте шлях до файлу:
+`arx program.arx`
 
 Інші команди:
-- `ArxLang.exe format program.arx` - вивести відформатований код
-- `ArxLang.exe lint program.arx` - перевірити код на типові помилки (невикористані змінні, задовгі рядки, порожні блоки)
+- `arx format program.arx` - вивести відформатований код
+- `arx lint program.arx` - перевірити код на типові помилки (невикористані змінні, задовгі рядки, порожні блоки)

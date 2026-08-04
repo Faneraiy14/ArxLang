@@ -8,6 +8,17 @@ public class Parser
     private readonly List<Token> _tokens;
     private int _pos;
 
+    // Неоднозначність struct-літералів (Ідентифікатор { ... }) проти блоку
+    // умовного оператора: "while i < N { ... }" — після "N" наступний "{"
+    // МІГ БИ бути початком структурного літерала (детекція за великою
+    // літерою в ParsePrimary), але тут це якраз відкриття тіла циклу.
+    // _noStructLiteral=true, поки парситься умова if/while/for (де перед
+    // "{" завжди має йти саме тіло, а не літерал), і скидається назад на
+    // false усередині будь-яких дужок/квадратних дужок — там межу з "{"
+    // тіла однозначно визначає закривна дужка, тож усередині них
+    // структурні літерали лишаються дозволеними як завжди.
+    private bool _noStructLiteral;
+
     public Parser(List<Token> tokens) { _tokens = tokens; _pos = 0; }
 
     private Token Peek() => _pos < _tokens.Count ? _tokens[_pos] : _tokens.Last();
@@ -267,7 +278,7 @@ public class Parser
         // розуміє їх як групування. Спецобробка ламала умови, що ПОЧИНАЮТЬСЯ
         // з дужки, але нею не вичерпуються: if (a) || (b) { } — вона з'їдала
         // "(a)" і одразу вимагала "{", натикаючись на "||".
-        var cond = ParseExpression();
+        var cond = ParseConditionExpression();
 
         var thenBlock = ParseBlockStatement();
         BlockStatement? elseBlock = null;
@@ -292,10 +303,28 @@ public class Parser
     {
         Advance();
         // Те саме, що й у if: дужки — звичайне групування у виразі.
-        var cond = ParseExpression();
+        var cond = ParseConditionExpression();
 
         var body = ParseBlockStatement();
         return new WhileStatement(cond, body);
+    }
+
+    // Парсить вираз умови if/while/for з тимчасово вимкненою детекцією
+    // struct-літералів на верхньому рівні (див. коментар біля
+    // _noStructLiteral) — так "while i < N { ... }" не намагається
+    // прочитати "N { ... }" як побудову структури N.
+    private ExpressionNode ParseConditionExpression()
+    {
+        var outer = _noStructLiteral;
+        _noStructLiteral = true;
+        try
+        {
+            return ParseExpression();
+        }
+        finally
+        {
+            _noStructLiteral = outer;
+        }
     }
 
     private ForStatement ParseForStatement()
@@ -304,11 +333,32 @@ public class Parser
         var varName = Consume(TokenType.Identifier, "Очікується назва змінної");
         if (Peek().Type == TokenType.Keyword && Peek().Value == "in") Advance();
         else throw new Exception($"Очікується 'in' на рядку {Peek().Line}, стовпець {Peek().Column}");
-        var start = ParseAddition();
-        if (Peek().Type == TokenType.Operator && Peek().Value == "..")
+
+        var outer = _noStructLiteral;
+        _noStructLiteral = true;
+        ExpressionNode start, end;
+        bool isRange;
+        try
         {
-            Advance();
-            var end = ParseAddition();
+            start = ParseAddition();
+            isRange = Peek().Type == TokenType.Operator && Peek().Value == "..";
+            if (isRange)
+            {
+                Advance();
+                end = ParseAddition();
+            }
+            else
+            {
+                end = null!;
+            }
+        }
+        finally
+        {
+            _noStructLiteral = outer;
+        }
+
+        if (isRange)
+        {
             var rangeBody = ParseBlockStatement();
             return new ForStatement(varName.Value, start, end, rangeBody);
         }
@@ -406,10 +456,22 @@ public class Parser
         {
             Advance();
             var array = new ArrayLiteralExpression();
-            while (Peek().Type != TokenType.Punctuation || Peek().Value != "]")
+            // Усередині "[...]" межу з "{" тіла умови вже однозначно визначає
+            // "]" — struct-літерали як елементи масиву знову дозволені,
+            // навіть якщо весь масив стоїть у виразі умови if/while/for.
+            var outerNoStruct = _noStructLiteral;
+            _noStructLiteral = false;
+            try
             {
-                array.Elements.Add(ParseExpression());
-                if (Peek().Type == TokenType.Punctuation && Peek().Value == ",") Advance();
+                while (Peek().Type != TokenType.Punctuation || Peek().Value != "]")
+                {
+                    array.Elements.Add(ParseExpression());
+                    if (Peek().Type == TokenType.Punctuation && Peek().Value == ",") Advance();
+                }
+            }
+            finally
+            {
+                _noStructLiteral = outerNoStruct;
             }
             Consume(TokenType.Punctuation, "Очікується ']'");
             return array;
@@ -439,7 +501,7 @@ public class Parser
             string name = token.Value;
             Advance();
 
-            if (!string.IsNullOrEmpty(name) && char.IsUpper(name[0]) && Peek().Type == TokenType.Punctuation && Peek().Value == "{")
+            if (!_noStructLiteral && !string.IsNullOrEmpty(name) && char.IsUpper(name[0]) && Peek().Type == TokenType.Punctuation && Peek().Value == "{")
             {
                 Advance();
                 var structInit = new StructInitExpression(name);
@@ -472,10 +534,21 @@ public class Parser
                 {
                     Advance();
                     var args = new List<ExpressionNode>();
-                    while (Peek().Type != TokenType.Punctuation || Peek().Value != ")")
+                    // Межу з "{" тіла умови тут однозначно визначає ")" —
+                    // struct-літерали як аргументи виклику знову дозволені.
+                    var outerNoStruct = _noStructLiteral;
+                    _noStructLiteral = false;
+                    try
                     {
-                        args.Add(ParseExpression());
-                        if (Peek().Type == TokenType.Punctuation && Peek().Value == ",") Advance();
+                        while (Peek().Type != TokenType.Punctuation || Peek().Value != ")")
+                        {
+                            args.Add(ParseExpression());
+                            if (Peek().Type == TokenType.Punctuation && Peek().Value == ",") Advance();
+                        }
+                    }
+                    finally
+                    {
+                        _noStructLiteral = outerNoStruct;
                     }
                     Consume(TokenType.Punctuation, "Очікується ')'");
                     
@@ -501,7 +574,17 @@ public class Parser
                 else if (Peek().Type == TokenType.Punctuation && Peek().Value == "[")
                 {
                     Advance();
-                    var index = ParseExpression();
+                    var outerNoStruct = _noStructLiteral;
+                    _noStructLiteral = false;
+                    ExpressionNode index;
+                    try
+                    {
+                        index = ParseExpression();
+                    }
+                    finally
+                    {
+                        _noStructLiteral = outerNoStruct;
+                    }
                     Consume(TokenType.Punctuation, "Очікується ']'");
                     expr = new IndexExpression(expr, index);
                 }
@@ -512,7 +595,17 @@ public class Parser
         if (token.Type == TokenType.Punctuation && token.Value == "(")
         {
             Advance();
-            var expr = ParseExpression();
+            var outerNoStruct = _noStructLiteral;
+            _noStructLiteral = false;
+            ExpressionNode expr;
+            try
+            {
+                expr = ParseExpression();
+            }
+            finally
+            {
+                _noStructLiteral = outerNoStruct;
+            }
             Consume(TokenType.Punctuation, "Очікується ')'");
             return expr;
         }

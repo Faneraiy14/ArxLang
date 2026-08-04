@@ -785,7 +785,11 @@ public class VirtualMachine
                 case OpCode.ARRAY_GET:
                     {
                         int index = TruncToInt(_stack.Pop());
-                        var arr = (List<object>)_stack.Pop();
+                        var arrObj = _stack.Pop();
+                        if (arrObj is not List<object> arr)
+                            throw new Exception("Спроба звернутися до елемента масиву, але значення зліва - null або не масив.");
+                        if (index < 0 || index >= arr.Count)
+                            throw new Exception($"Індекс {index} поза межами масиву (довжина {arr.Count}).");
                         _stack.Push(arr[index]);
                     }
                     break;
@@ -793,7 +797,11 @@ public class VirtualMachine
                     {
                         var val = _stack.Pop();
                         int index = TruncToInt(_stack.Pop());
-                        var arr = (List<object>)_stack.Pop();
+                        var arrObj = _stack.Pop();
+                        if (arrObj is not List<object> arr)
+                            throw new Exception("Спроба присвоїти елемент масиву, але значення зліва - null або не масив.");
+                        if (index < 0 || index >= arr.Count)
+                            throw new Exception($"Індекс {index} поза межами масиву (довжина {arr.Count}).");
                         arr[index] = val;
                     }
                     break;
@@ -814,15 +822,21 @@ public class VirtualMachine
                 case OpCode.STRUCT_GET:
                     {
                         var fieldName = (string)_stack.Pop();
-                        var fields = (Dictionary<string, object>)_stack.Pop();
-                        _stack.Push(fields[fieldName]);
+                        var fieldsObj = _stack.Pop();
+                        if (fieldsObj is not Dictionary<string, object> fields)
+                            throw new Exception($"Спроба звернутися до поля '{fieldName}', але значення зліва - null або не структура.");
+                        if (!fields.TryGetValue(fieldName, out var val))
+                            throw new Exception($"У структурі немає поля '{fieldName}'.");
+                        _stack.Push(val);
                     }
                     break;
                 case OpCode.STRUCT_SET:
                     {
                         var val = _stack.Pop();
                         var fieldName = (string)_stack.Pop();
-                        var fields = (Dictionary<string, object>)_stack.Pop();
+                        var fieldsObj = _stack.Pop();
+                        if (fieldsObj is not Dictionary<string, object> fields)
+                            throw new Exception($"Спроба присвоїти поле '{fieldName}', але значення зліва - null або не структура.");
                         fields[fieldName] = val;
                     }
                     break;

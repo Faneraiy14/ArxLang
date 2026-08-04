@@ -1,8 +1,8 @@
 {
   "name": "arxlang",
   "displayName": "ArxLang",
-  "description": "Підсвічування синтаксису для .arx файлів (ArxLang)",
-  "version": "0.1.0",
+  "description": "Підсвічування синтаксису й автодоповнення для .arx файлів (ArxLang)",
+  "version": "0.2.0",
   "publisher": "Faneraiy14",
   "license": "MIT",
   "repository": {
@@ -14,6 +14,10 @@
   },
   "categories": [
     "Programming Languages"
+  ],
+  "main": "./extension.js",
+  "activationEvents": [
+    "onLanguage:arxlang"
   ],
   "contributes": {
     "languages": [

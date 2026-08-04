@@ -354,18 +354,37 @@ public class VirtualMachine
             return result;
         };
 
-        // File I/O
-        _nativeFunctions["readFile"] = args => File.ReadAllText(args[0]?.ToString() ?? "");
+        // File I/O — усі шляхи проходять через Sandbox.CheckPath: за
+        // замовчуванням це no-op, але під ARX_SANDBOX=1 (напр. ArxMcp,
+        // що виконує потенційно згенерований ШІ код) обмежує доступ
+        // поточною робочою директорією.
+        _nativeFunctions["readFile"] = args => {
+            var path = args[0]?.ToString() ?? "";
+            ArxLang.Runtime.Sandbox.CheckPath(path);
+            return File.ReadAllText(path);
+        };
         _nativeFunctions["writeFile"] = args => {
-            File.WriteAllText(args[0]?.ToString() ?? "", args[1]?.ToString() ?? "");
+            var path = args[0]?.ToString() ?? "";
+            ArxLang.Runtime.Sandbox.CheckPath(path);
+            File.WriteAllText(path, args[1]?.ToString() ?? "");
             return true;
         };
         _nativeFunctions["appendFile"] = args => {
-            File.AppendAllText(args[0]?.ToString() ?? "", args[1]?.ToString() ?? "");
+            var path = args[0]?.ToString() ?? "";
+            ArxLang.Runtime.Sandbox.CheckPath(path);
+            File.AppendAllText(path, args[1]?.ToString() ?? "");
             return true;
         };
-        _nativeFunctions["fileExists"] = args => File.Exists(args[0]?.ToString() ?? "");
-        _nativeFunctions["readLines"] = args => File.ReadAllLines(args[0]?.ToString() ?? "").Select(l => (object)l).ToList();
+        _nativeFunctions["fileExists"] = args => {
+            var path = args[0]?.ToString() ?? "";
+            ArxLang.Runtime.Sandbox.CheckPath(path);
+            return File.Exists(path);
+        };
+        _nativeFunctions["readLines"] = args => {
+            var path = args[0]?.ToString() ?? "";
+            ArxLang.Runtime.Sandbox.CheckPath(path);
+            return File.ReadAllLines(path).Select(l => (object)l).ToList();
+        };
         _nativeFunctions["printNoNewLine"] = args => {
             Console.Write(args[0]);
             return null;

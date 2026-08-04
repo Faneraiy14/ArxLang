@@ -28,6 +28,7 @@ public static class WebSocketModule
 
     private static object? WsConnect(object[] args)
     {
+        Sandbox.CheckNetwork();
         string url = args[0].ToString()!;
         var socket = new ClientWebSocket();
         socket.ConnectAsync(new Uri(url), CancellationToken.None).GetAwaiter().GetResult();

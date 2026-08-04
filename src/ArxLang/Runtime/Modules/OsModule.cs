@@ -11,7 +11,11 @@ public static class OsModule
         registry["osArchitecture"] = args => RuntimeInformation.OSArchitecture.ToString();
         registry["osMemory"] = args => Process.GetCurrentProcess().WorkingSet64 / (1024 * 1024); // MB
         registry["osCpuCount"] = args => Environment.ProcessorCount;
-        registry["osEnv"] = args => Environment.GetEnvironmentVariable(args[0].ToString()!) ?? "";
+        registry["osEnv"] = args => {
+            if (Sandbox.Enabled)
+                throw new Exception("Пісочниця: читання змінних середовища заборонено (ARX_SANDBOX=1)");
+            return Environment.GetEnvironmentVariable(args[0].ToString()!) ?? "";
+        };
         registry["osCwd"] = args => Directory.GetCurrentDirectory();
     }
 }

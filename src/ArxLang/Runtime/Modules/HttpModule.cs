@@ -17,6 +17,7 @@ public static class HttpModule
 
     private static object? UrlStatus(object[] args)
     {
+        Sandbox.CheckNetwork();
         try
         {
             string url = args[0].ToString()!;
@@ -38,6 +39,7 @@ public static class HttpModule
     // кожен запит — той самий підхід, що й guiOnAction для кліків.
     private static object? CreateServer(object[] args)
     {
+        Sandbox.CheckNetwork();
         int port = Convert.ToInt32(args[0]);
         var handlerRef = (ArxFunctionRef)args[1];
         var vm = VirtualMachine.Current!;
@@ -86,6 +88,7 @@ public static class HttpModule
 
     private static object? HttpGet(object[] args)
     {
+        Sandbox.CheckNetwork();
         string url = args[0].ToString()!;
         using var client = new HttpClient();
         return client.GetStringAsync(url).GetAwaiter().GetResult();
@@ -97,6 +100,7 @@ public static class HttpModule
     // "надіслати й прочитати" сценарію без потреби перевіряти статус-код.
     private static object? HttpPost(object[] args)
     {
+        Sandbox.CheckNetwork();
         string url = args[0].ToString()!;
         string body = args.Length > 1 ? args[1]?.ToString() ?? "" : "";
         using var client = new HttpClient();
@@ -114,6 +118,7 @@ public static class HttpModule
     // як у Telegram.
     private static object? HttpRequest(object[] args)
     {
+        Sandbox.CheckNetwork();
         string url = args[0].ToString()!;
         string method = args.Length > 1 ? args[1]?.ToString()?.ToUpperInvariant() ?? "GET" : "GET";
         string body = args.Length > 2 ? args[2]?.ToString() ?? "" : "";

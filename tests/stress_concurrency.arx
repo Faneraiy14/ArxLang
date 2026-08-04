@@ -1,0 +1,55 @@
+// stress_concurrency.arx — НЕ частина основного набору assert-тестів
+// (run_all.sh його не запускає автоматично, як і bench_loop.arx):
+// навмисно багато воркерів і виділень, щоб мати реальний шанс зловити
+// гонку даних, якби вона була, а не просто "разок пощастило".
+import "../lib/testing.arx" { assertEqual }
+
+func worker(id) {
+    // Кожен воркер сам виділяє купу масивів (ArxGc.RecordAllocation під
+    // Interlocked) і викликає randomInt (Random.Shared) — саме ці два
+    // місця раніше не були thread-safe.
+    var sum = 0
+    var i = 0
+    while i < 500 {
+        var arr = [id, i, randomInt(1, 1000000)]
+        sum = sum + arr[0] + arr[1]
+        i = i + 1
+    }
+    return sum
+}
+
+func main() {
+    var N = 40
+    var workers = []
+    var i = 0
+    while i < N {
+        append(workers, spawn(worker, i))
+        i = i + 1
+    }
+
+    var results = []
+    i = 0
+    while i < N {
+        append(results, workerJoin(workers[i]))
+        i = i + 1
+    }
+
+    // Кожен воркер детермінований (крім randomInt, який не впливає на
+    // sum) — sum(id) = 500*id + сума 0..499 = 500*id + 124750.
+    i = 0
+    var allCorrect = true
+    while i < N {
+        var expected = 500 * i + 124750
+        if results[i] != expected {
+            allCorrect = false
+            print("воркер " + toString(i) + ": очікувалось " + toString(expected) + ", отримано " + toString(results[i]))
+        }
+        i = i + 1
+    }
+    assertEqual(allCorrect, true, "усі " + toString(N) + " воркерів дали детерміновано правильну суму під конкурентним навантаженням на ArxGc/Random")
+
+    var stats = gc_stats()
+    print("GC: виділено " + toString(stats.allocated) + " об'єктів під час стрес-тесту")
+
+    print("стрес-тест конкурентності пройдено")
+}

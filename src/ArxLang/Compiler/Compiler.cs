@@ -92,6 +92,7 @@ public class Compiler
         "httpServer", "httpGet", "urlStatus", "httpPost", "httpRequest",
         "regexTest", "regexMatch", "regexFindAll", "regexReplace",
         "wsConnect", "wsSend", "wsReceive", "wsClose",
+        "spawn", "workerJoin", "newChannel", "channelSend", "channelReceive",
         "createCanvas", "clearCanvas", "drawRect", "drawCircle", "drawLine", "drawText",
         "presentCanvas", "canvasShouldClose", "closeCanvas",
         "isKeyDown", "isMouseDown", "getMouseX", "getMouseY", "project3D",

@@ -6,6 +6,12 @@ namespace ArxLang.Runtime;
 // структури, мапи), щоб некерований цикл виділень не поклав хост-процес.
 // Один інстанс на процес — реєструється як native-функції у
 // VirtualMachine, чиї лямбди статичні, тож і облік має бути статичним.
+//
+// З появою spawn() (ConcurrencyModule.cs) RecordAllocation() викликається
+// одночасно з кількох потоків (головний + воркери) на ЦЕЙ САМИЙ спільний
+// інстанс — ліміт виділень навмисно один бюджет на всю програму, а не
+// окремий на воркер. Тому лічильники через Interlocked, а не звичайний
+// "++": некоректний під конкурентним доступом (втрачені інкременти).
 public sealed class ArxGc
 {
     public static readonly ArxGc Instance = new();
@@ -17,12 +23,14 @@ public sealed class ArxGc
 
     public void RecordAllocation()
     {
-        _allocated++;
-        _sinceLastCheck++;
+        Interlocked.Increment(ref _allocated);
         // Перевірка ліміту на кожному виділенні була б зайвим накладним
-        // видатком у гарячих циклах — досить перевіряти пачками.
-        if (_sinceLastCheck < CheckInterval) return;
-        _sinceLastCheck = 0;
+        // видатком у гарячих циклах — досить перевіряти пачками. Гонка між
+        // потоками тут можлива (кілька можуть одночасно "виграти" поріг
+        // CheckInterval і перевірити трохи частіше за задумане) — нешкідливо,
+        // бо CheckLimits() лише читає підсумковий _allocated, не змінює його.
+        if (Interlocked.Increment(ref _sinceLastCheck) < CheckInterval) return;
+        Interlocked.Exchange(ref _sinceLastCheck, 0);
         CheckLimits();
     }
 

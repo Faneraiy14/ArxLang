@@ -1,0 +1,71 @@
+import "../lib/testing.arx" { assertEqual, assertTrue, assertThrows }
+
+func square(n) {
+    return n * n
+}
+
+func main() {
+    // Базовий spawn/workerJoin
+    var w1 = spawn(square, 7)
+    assertEqual(workerJoin(w1), 49, "spawn+workerJoin повертає результат функції")
+
+    // Кілька воркерів одночасно, кожен зі своїм результатом
+    var workers = []
+    var i = 0
+    while i < 10 {
+        append(workers, spawn(square, i))
+        i = i + 1
+    }
+    var results = []
+    i = 0
+    while i < len(workers) {
+        append(results, workerJoin(workers[i]))
+        i = i + 1
+    }
+    assertEqual(toJson(results), toJson([0, 1, 4, 9, 16, 25, 36, 49, 64, 81]), "10 незалежних воркерів дають правильні результати кожен")
+
+    // Замикання: масив, захоплений лямбдою ПЕРЕД spawn, копіюється —
+    // мутація в головному потоці ПІСЛЯ spawn не повинна бути видна воркеру.
+    var shared = [1, 2, 3]
+    var readCaptured = func() {
+        return len(shared)
+    }
+    var w2 = spawn(readCaptured)
+    shared[0] = 999
+    append(shared, 4)
+    append(shared, 5)
+    assertEqual(workerJoin(w2), 3, "мутація масиву в головному потоці ПІСЛЯ spawn не видна воркеру (deep copy)")
+    assertEqual(len(shared), 5, "головний потік далі бачить свою версію масиву без втручання воркера")
+
+    // Виняток у воркері прокидається в workerJoin() і ловиться try/catch
+    var thrower = func() {
+        throw "бум з воркера"
+    }
+    assertThrows(func() {
+        workerJoin(spawn(thrower))
+    }, "необроблена помилка воркера прокидається через workerJoin")
+
+    // Канали: базовий send/receive
+    var ch = newChannel()
+    var sender = func(c) {
+        channelSend(c, "перше")
+        channelSend(c, "друге")
+    }
+    var wsend = spawn(sender, ch)
+    assertEqual(channelReceive(ch), "перше", "перше повідомлення каналу")
+    assertEqual(channelReceive(ch), "друге", "друге повідомлення каналу")
+    workerJoin(wsend)
+
+    // Канал: тайм-аут на порожньому каналі повертає null, не блокує назавжди
+    var emptyCh = newChannel()
+    assertEqual(channelReceive(emptyCh, 200), null, "тайм-аут на порожньому каналі повертає null")
+
+    // Вкладений spawn: воркер сам спавнить іншого воркера
+    var inner = func(n) { return n + 1 }
+    var outer = func() {
+        return workerJoin(spawn(inner, 41))
+    }
+    assertEqual(workerJoin(spawn(outer)), 42, "воркер може сам спавнити воркера (вкладений spawn)")
+
+    print("усі перевірки конкурентності пройдено")
+}

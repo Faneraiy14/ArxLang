@@ -95,7 +95,6 @@ public class VirtualMachine
     }
     private readonly Dictionary<string, int> _functionAddresses;
     private int _ip;
-    private static readonly Random _random = new Random();
     public static readonly Dictionary<string, Func<object[], object?>> _nativeFunctions = new();
 
     static VirtualMachine()
@@ -124,8 +123,12 @@ public class VirtualMachine
         _nativeFunctions["toFixed"] = args => PopNumVal(args[0]).ToString("F" + TruncToInt(args[1]), System.Globalization.CultureInfo.InvariantCulture);
         
         // Random
-        _nativeFunctions["randomInt"] = args => (double)_random.Next(TruncToInt(args[0]), TruncToInt(args[1]) + 1);
-        _nativeFunctions["randomDouble"] = args => PopNumVal(args[0]) + (_random.NextDouble() * (PopNumVal(args[1]) - PopNumVal(args[0])));
+        // Random.Shared (не власний Random-інстанс): він thread-safe для
+        // конкурентних викликів з кількох потоків одразу — звичайний "new
+        // Random()", яким користуються кілька воркерів (spawn()) паралельно,
+        // не гарантує коректність свого внутрішнього стану під конкуренцією.
+        _nativeFunctions["randomInt"] = args => (double)Random.Shared.Next(TruncToInt(args[0]), TruncToInt(args[1]) + 1);
+        _nativeFunctions["randomDouble"] = args => PopNumVal(args[0]) + (Random.Shared.NextDouble() * (PopNumVal(args[1]) - PopNumVal(args[0])));
 
         // Conversions & Types
         _nativeFunctions["toString"] = args => args[0]?.ToString() ?? "null";
@@ -500,6 +503,7 @@ public class VirtualMachine
         ArxLang.Runtime.Modules.OsModule.Register(_nativeFunctions);
         ArxLang.Runtime.Modules.RegexModule.Register(_nativeFunctions);
         ArxLang.Runtime.Modules.WebSocketModule.Register(_nativeFunctions);
+        ArxLang.Runtime.Modules.ConcurrencyModule.Register(_nativeFunctions);
 #if WINDOWS
         ArxLang.Runtime.Modules.GraphicsModule.Register(_nativeFunctions);
 #endif
@@ -525,8 +529,29 @@ public class VirtualMachine
         _globals = initialGlobals != null ? new Dictionary<string, object>(initialGlobals) : new();
     }
 
+    // Використовується spawn() (ConcurrencyModule.cs): нова VM для окремого
+    // потоку-воркера з ТИМ САМИМ байткодом, що й у "template" (_code/
+    // _constants/_functionAddresses/_lineMap — усі readonly й незмінні
+    // після компіляції, тому безпечно спільні між потоками), але повністю
+    // окремим виконуваним станом (стек/фрейми/глобальні) — жодного
+    // спільного мутабельного стану з батьківською VM чи іншими воркерами.
+    internal VirtualMachine(VirtualMachine template, IReadOnlyDictionary<string, object>? initialGlobals)
+    {
+        _code = template._code;
+        _constants = template._constants;
+        _functionAddresses = template._functionAddresses;
+        _lineMap = template._lineMap;
+        _globals = initialGlobals != null ? new Dictionary<string, object>(initialGlobals) : new();
+    }
+
     // Дозволяє нативним функціям (sort/mapArr/filter/reduce тощо) знайти
     // поточну VM і викликати ArxLang-функцію-значення як колбек.
+    // [ThreadStatic]: з появою spawn() (ConcurrencyModule.cs) кілька VM
+    // виконуються одночасно на різних потоках — звичайний static тут
+    // означав би, що воркер на мить перезаписує Current головного потоку
+    // (чи навпаки), і колбек виконується не в тій VM. Кожен потік бачить
+    // власне значення.
+    [ThreadStatic]
     public static VirtualMachine? Current;
 
     // Останній запис у _lineMap з Offset <= поточного _ip. _lineMap
@@ -598,6 +623,45 @@ public class VirtualMachine
         var result = _stack.Count > 0 ? _stack.Pop() : null;
         _ip = savedIp;
         return result;
+    }
+
+    // Використовується spawn() (ConcurrencyModule.cs): на відміну від
+    // InvokeFunctionValue (виклик УСЕРЕДИНІ вже запущеного Run() на цьому
+    // самому потоці), тут funcRef — ЄДИНА програма для щойно створеної VM
+    // на новому потоці, тому сама виставляє Current (thread-local — див.
+    // коментар біля поля) і сама обгортає необроблені помилки номером
+    // рядка, як це інакше робив би Run().
+    public object? RunFunction(ArxFunctionRef funcRef, object[] args)
+    {
+        Current = this;
+
+        if (funcRef.NativeName != null)
+            return _nativeFunctions[funcRef.NativeName](args);
+
+        int targetCallDepth = _callStack.Count;
+        _callStack.Push(_ip);
+        _frameStack.Push(_currentFrame);
+        _currentFrame = new Dictionary<int, object>();
+        if (funcRef.Captured != null)
+            foreach (var kv in funcRef.Captured) _currentFrame[kv.Key] = kv.Value;
+        foreach (var a in args) _stack.Push(a);
+        _ip = funcRef.Address;
+
+        while (_callStack.Count > targetCallDepth)
+        {
+            try
+            {
+                if (!Step()) break;
+            }
+            catch (Exception ex) when (_handlers.Count == 0)
+            {
+                int line = CurrentLine();
+                string prefix = line > 0 ? $"рядок {line}: " : "";
+                throw new Exception(prefix + ex.Message, ex);
+            }
+        }
+
+        return _stack.Count > 0 ? _stack.Pop() : null;
     }
 
     private bool Step()

@@ -113,6 +113,21 @@ if [ -f "test_jit_superops.arx" ]; then
     fi
 fi
 
+# REPL: глобальна var і func, оголошені на одному рядку, мають лишатись
+# видимими й зі своїм значенням на наступних рядках (VirtualMachine.Globals
+# + Compiler.Compile(knownGlobals) в ArxNode.cs). print() при цьому не
+# повинен повторюватись на кожному наступному рядку.
+repl_out=$(printf 'var x = 5\nfunc double(n) { return n * 2 }\nprint(x)\nprint(double(x))\nexit()\n' | timeout "$TIMEOUT_SEC" "$EXE" 2>&1)
+repl_clean=$(echo "$repl_out" | sed 's/> //g' | sed '/^ArxNode REPL\|^Type /d' | grep -v '^[[:space:]]*$')
+if [ "$repl_clean" = "$(printf '5\n10')" ]; then
+    echo "✅ REPL — var і func зберігаються між рядками, print не дублюється"
+    pass=$((pass+1))
+else
+    echo "❌ REPL — стан між рядками не зберігається або вивід продублювався"
+    echo "$repl_out" | sed 's/^/       /'
+    fail=$((fail+1)); failed+=("REPL — персистентність між рядками")
+fi
+
 echo
 echo "======================================"
 echo "Успішно: $pass | Провалено: $fail | Пропущено: $skip"

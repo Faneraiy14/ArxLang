@@ -35,7 +35,13 @@ public class VirtualMachine
     // для кожної функції (Compiler.cs скидає _varCounter=0 при вході в
     // FunctionDeclaration), тому спільний слот для глобальних не спрацював
     // би: два різні виклики просто не бачили б одне значення.
-    private readonly Dictionary<string, object> _globals = new();
+    private readonly Dictionary<string, object> _globals;
+
+    // Дозволяє викликачу (напр. REPL в ArxNode.cs) забрати значення
+    // глобальних змінних після Run() і передати їх у КОНСТРУКТОР наступної
+    // VM — так глобальна var, оголошена в одному рядку REPL, лишається
+    // видимою й зі своїм значенням у наступних рядках.
+    public IReadOnlyDictionary<string, object> Globals => _globals;
 
     // try/catch: кожен активний try запам'ятовує, куди стрибнути і до якої
     // глибини стеку/фреймів/викликів відкотитись, якщо всередині нього
@@ -510,12 +516,13 @@ public class VirtualMachine
 
     private readonly List<(int Offset, int Line)> _lineMap;
 
-    public VirtualMachine(Bytecode bytecode)
+    public VirtualMachine(Bytecode bytecode, IReadOnlyDictionary<string, object>? initialGlobals = null)
     {
         _code = bytecode.ToArray();
         _constants = bytecode.Constants;
         _functionAddresses = bytecode.FunctionAddresses;
         _lineMap = bytecode.LineMap;
+        _globals = initialGlobals != null ? new Dictionary<string, object>(initialGlobals) : new();
     }
 
     // Дозволяє нативним функціям (sort/mapArr/filter/reduce тощо) знайти

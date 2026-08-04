@@ -1,4 +1,6 @@
+using System.Linq;
 using System.Text;
+using ArxLang.AST;
 using ArxLang.Core;
 using ArxLang.Compiler;
 using ArxLang.VM;
@@ -77,6 +79,7 @@ public class ArxNode
         if (!File.Exists(path))
         {
             Console.WriteLine($"Error: Cannot find file '{path}'");
+            Environment.Exit(1);
             return;
         }
         string code = File.ReadAllText(path, Encoding.UTF8);
@@ -89,6 +92,7 @@ public class ArxNode
         if (!File.Exists(path))
         {
             Console.WriteLine($"Error: Cannot find file '{path}'");
+            Environment.Exit(1);
             return;
         }
         string code = File.ReadAllText(path, Encoding.UTF8);
@@ -118,8 +122,20 @@ public class ArxNode
     {
         Console.WriteLine("ArxNode REPL v1.0.0");
         Console.WriteLine("Type 'exit()' to quit.");
-        
-        // We'll keep a single VM and Compiler state if possible, but for now, simple line-by-line
+
+        // Стан, що зберігається МІЖ рядками REPL:
+        //  - globals: значення глобальних var з попередніх рядків — кожен
+        //    новий рядок компілюється й виконується окремою VM, тож без
+        //    цього "var x = 5", а тоді "print(x)" на наступному рядку
+        //    давало б "Змінна 'x' не оголошена".
+        //  - priorDecls: сирий текст рядків, що складаються ЛИШЕ з func/
+        //    struct-оголошень — щоб функцію з одного рядка можна було
+        //    викликати з наступного. Рядки зі звичайними виразами (напр.
+        //    print(...)) сюди НЕ потрапляють: інакше побічний ефект
+        //    (друк, запис у файл) виконувався б повторно щоразу.
+        var globals = new Dictionary<string, object>();
+        var priorDecls = new List<string>();
+
         while (true)
         {
             Console.Write("> ");
@@ -129,9 +145,24 @@ public class ArxNode
 
             try
             {
-                // REPL needs a bit of a trick: wrap in main if not present
-                string code = line.Contains("func ") ? line : $"func main() {{ {line} }}";
-                Execute(code);
+                var lineProgram = new Parser(new Lexer(line).Tokenize()).ParseProgram();
+                bool isDeclOnly = lineProgram.Statements.Count > 0 &&
+                    lineProgram.Statements.All(s => s is FunctionDeclaration || s is StructDeclaration);
+
+                string combinedSource = string.Join("\n", priorDecls) + "\n" + line;
+                var program = new Parser(new Lexer(combinedSource).Tokenize()).ParseProgram();
+
+                var compiler = new Compiler.Compiler();
+                var bytecode = compiler.Compile(program, globals.Keys);
+
+                var vm = new VirtualMachine(bytecode, globals);
+                vm.Run();
+
+                foreach (var (name, value) in vm.Globals)
+                    globals[name] = value;
+
+                if (isDeclOnly)
+                    priorDecls.Add(line);
             }
             catch (Exception ex)
             {

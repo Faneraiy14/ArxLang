@@ -101,15 +101,22 @@ public class Compiler
         "dbOpen", "dbClose", "dbSet", "dbGet", "dbHas", "dbDelete", "dbKeys", "dbCount", "dbCheckpoint"
     };
 
-    public Bytecode Compile(ProgramNode program)
+    // knownGlobals — імена глобальних змінних, оголошених РАНІШЕ, поза цим
+    // program (напр. REPL: кожен рядок компілюється окремим викликом
+    // Compile(), тож глобальна var з попереднього рядка інакше виглядала б
+    // "не оголошеною" для компілятора, хоч у VM (Globals) її значення вже є.
+    public Bytecode Compile(ProgramNode program, IEnumerable<string>? knownGlobals = null)
     {
         _bytecode = new Bytecode();
-        
+
         foreach (var name in _builtins)
             _functions[name] = -1;
 
         // Реєструємо всі функції (включаючи вкладені) перед компіляцією
         RegisterFunctions(program.Statements);
+
+        if (knownGlobals != null)
+            foreach (var name in knownGlobals) _globalNames.Add(name);
 
         // Імена глобальних var — ПЕРЕД компіляцією тіл функцій. Інакше
         // функція, оголошена перед глобальною змінною в тексті файлу, не

@@ -72,16 +72,23 @@ public static class PackageManager
 
     // "arx install owner/repo" — тягне конкретний пакет і дописує його в
     // arx.json, щоб наступний "arx install" без аргументів підхопив його теж.
+    //
+    // У arx.json завжди записується конкретний SHA коміта (owner/repo@<sha>),
+    // навіть якщо користувач вказав гілку чи тег — інакше "arx install" без
+    // аргументів щоразу тягнув би те, що ЗАРАЗ лежить на гілці, а не те, що
+    // реально стояло на момент встановлення. Це захищає і від "тихої" підміни
+    // коду в чужому репозиторії заднім числом (force-push/переписана гілка).
     public static void InstallSingle(string source, string projectDir)
     {
         var name = PackageNameFrom(source);
-        InstallOne(name, source, projectDir).GetAwaiter().GetResult();
+        var (ownerRepo, _) = SplitRef(source);
+        var sha = InstallOne(name, source, projectDir).GetAwaiter().GetResult();
 
         var manifest = LoadManifest(projectDir);
-        manifest.Dependencies[name] = source;
+        manifest.Dependencies[name] = $"{ownerRepo}@{sha}";
         SaveManifest(projectDir, manifest);
 
-        Console.WriteLine($"Встановлено '{name}' ({source}), додано в {ManifestName}.");
+        Console.WriteLine($"Встановлено '{name}' ({ownerRepo}@{sha[..7]}), додано в {ManifestName}.");
     }
 
     private static string PackageNameFrom(string source)
@@ -92,7 +99,9 @@ public static class PackageManager
         return slash >= 0 ? withoutRef[(slash + 1)..] : withoutRef;
     }
 
-    private static async Task InstallOne(string name, string source, string projectDir)
+    // Повертає SHA коміта, з якого реально встановлено пакет — викликачі
+    // (InstallSingle) записують саме його в arx.json, а не вихідний ref.
+    private static async Task<string> InstallOne(string name, string source, string projectDir)
     {
         var (ownerRepo, explicitRef) = SplitRef(source);
         var parts = ownerRepo.Split('/');
@@ -104,9 +113,14 @@ public static class PackageManager
 
         Console.WriteLine($"Завантаження {owner}/{repo}...");
         var ghRef = explicitRef ?? await GetDefaultBranch(owner, repo);
+        var sha = await ResolveSha(owner, repo, ghRef);
 
+        // Качаємо архів саме по SHA коміта (не по гілці) — це і є фіксація:
+        // навіть якщо гілка зміниться між резолвом і завантаженням, або
+        // хтось перепише історію гілки пізніше, повторний "arx install" з
+        // arx.json завжди дістане той самий байт-в-байт вміст.
         var zipBytes = await Http.GetByteArrayAsync(
-            $"https://github.com/{owner}/{repo}/archive/refs/heads/{ghRef}.zip");
+            $"https://github.com/{owner}/{repo}/archive/{sha}.zip");
 
         var targetDir = Path.Combine(projectDir, ModulesDir, name);
         if (Directory.Exists(targetDir)) Directory.Delete(targetDir, true);
@@ -141,7 +155,8 @@ public static class PackageManager
         if (!File.Exists(entryFile))
             Console.WriteLine($"  Увага: у '{name}' немає main.arx у корені — import \"{name}\" не спрацює, доки він не з'явиться.");
 
-        Console.WriteLine($"  {name} -> {targetDir}");
+        Console.WriteLine($"  {name} -> {targetDir} (коміт {sha[..7]})");
+        return sha;
     }
 
     private static (string OwnerRepo, string? Ref) SplitRef(string source)
@@ -155,6 +170,17 @@ public static class PackageManager
         var json = await Http.GetStringAsync($"https://api.github.com/repos/{owner}/{repo}");
         using var doc = JsonDocument.Parse(json);
         return doc.RootElement.GetProperty("default_branch").GetString() ?? "main";
+    }
+
+    // Приймає гілку, тег або вже готовий SHA — GitHub API в усіх випадках
+    // повертає повний SHA коміта, на який це вказує саме зараз.
+    private static async Task<string> ResolveSha(string owner, string repo, string gitRef)
+    {
+        var json = await Http.GetStringAsync(
+            $"https://api.github.com/repos/{owner}/{repo}/commits/{Uri.EscapeDataString(gitRef)}");
+        using var doc = JsonDocument.Parse(json);
+        return doc.RootElement.GetProperty("sha").GetString()
+            ?? throw new Exception($"Не вдалося визначити SHA коміта для {owner}/{repo}@{gitRef}");
     }
 
     // Використовується ModuleResolver'ом для пошуку arx_modules/<name>/main.arx,

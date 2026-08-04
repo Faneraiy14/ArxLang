@@ -66,6 +66,7 @@ arx myprogram.arx
 | Можливість | Приклад |
 |---|---|
 | Змінні, `null` | `var x = 10`, `var n = null` |
+| String interpolation | `"Привіт, ${імя}! Тобі ${вік} років"` — будь-який вираз усередині `${...}` |
 | Функції, рекурсія | `func add(a, b) { return a + b }` |
 | Замикання | `var f = func() { return count }` |
 | Функції як значення | `var op = sqrt`, `sort(arr, cmp)` |

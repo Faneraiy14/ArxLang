@@ -98,6 +98,10 @@ public class Lexer
             {
                 _pos++;
                 string str = "";
+                var literalParts = new List<string>();
+                var exprTokenLists = new List<List<Token>>();
+                bool hasInterpolation = false;
+
                 while (_pos < _source.Length && _source[_pos] != '"')
                 {
                     if (_source[_pos] == '\\' && _pos + 1 < _source.Length)
@@ -110,20 +114,82 @@ public class Lexer
                             '0' => '\0',
                             '"' => '"',
                             '\\' => '\\',
+                            '$' => '$',
                             var other => other
                         };
                         str += escaped;
                         _pos += 2;
+                        continue;
                     }
-                    else
+
+                    // Інтерполяція ${вираз}: розпізнається лише на точній парі
+                    // символів $ і { (заекранувати як звичайний $ можна через \$).
+                    // Вкладені { } всередині виразу (мапи/структури) рахуються по
+                    // глибині — але лапки чи коментарі всередині самого ${...} тут
+                    // не підтримуються (винести в змінну поза рядком, якщо треба).
+                    if (_source[_pos] == '$' && _pos + 1 < _source.Length && _source[_pos + 1] == '{')
                     {
-                        str += _source[_pos];
-                        _pos++;
+                        hasInterpolation = true;
+                        literalParts.Add(str);
+                        str = "";
+
+                        _pos += 2;
+                        int exprStart = _pos;
+                        int depth = 1;
+                        while (_pos < _source.Length && depth > 0)
+                        {
+                            if (_source[_pos] == '{') depth++;
+                            else if (_source[_pos] == '}') { depth--; if (depth == 0) break; }
+                            _pos++;
+                        }
+                        if (depth != 0)
+                            throw new Exception($"Незакрита інтерполяція \"${{...\" у рядку {_line}");
+
+                        string exprSource = _source.Substring(exprStart, _pos - exprStart);
+                        _pos++; // '}'
+
+                        var exprTokens = new Lexer(exprSource).Tokenize();
+                        exprTokens.RemoveAt(exprTokens.Count - 1); // прибрати EOF
+                        exprTokenLists.Add(exprTokens);
+                        continue;
                     }
+
+                    str += _source[_pos];
+                    _pos++;
                 }
                 _pos++;
-                _tokens.Add(new Token(TokenType.String, str, _line, _column));
-                _column += str.Length + 2;
+
+                if (!hasInterpolation)
+                {
+                    _tokens.Add(new Token(TokenType.String, str, _line, _column));
+                    _column += str.Length + 2;
+                    continue;
+                }
+
+                literalParts.Add(str);
+
+                // Розгортаємо "a${b}c" у ("" + "a" + (b) + "c") — той самий
+                // оператор +, яким і так усюди конкатенують рядок з числом чи
+                // будь-чим іншим (ArxNode сам приводить до рядка при конкатенації,
+                // див. VirtualMachine.ADD) — тому ні парсер, ні VM не потребують
+                // жодних змін під новий синтаксис. Порожній рядок на початку —
+                // гарантія, що ланцюжок стає рядковим із самого першого +,
+                // незалежно від того, чи рядок починається з тексту чи з виразу.
+                _tokens.Add(new Token(TokenType.Punctuation, "(", _line, _column));
+                _tokens.Add(new Token(TokenType.String, "", _line, _column));
+                for (int i = 0; i < literalParts.Count; i++)
+                {
+                    _tokens.Add(new Token(TokenType.Operator, "+", _line, _column));
+                    _tokens.Add(new Token(TokenType.String, literalParts[i], _line, _column));
+                    if (i < exprTokenLists.Count)
+                    {
+                        _tokens.Add(new Token(TokenType.Operator, "+", _line, _column));
+                        _tokens.Add(new Token(TokenType.Punctuation, "(", _line, _column));
+                        _tokens.AddRange(exprTokenLists[i]);
+                        _tokens.Add(new Token(TokenType.Punctuation, ")", _line, _column));
+                    }
+                }
+                _tokens.Add(new Token(TokenType.Punctuation, ")", _line, _column));
                 continue;
             }
 

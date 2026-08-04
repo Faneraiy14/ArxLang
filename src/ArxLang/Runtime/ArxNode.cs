@@ -24,7 +24,8 @@ public class ArxNode
         string command = args[0];
         if (command == "--version" || command == "-v")
         {
-            Console.WriteLine("ArxNode v1.0.0 (based on ArxLang v8.0)");
+            var v = typeof(ArxNode).Assembly.GetName().Version;
+            Console.WriteLine(v != null ? $"ArxNode v{v.Major}.{v.Minor}.{v.Build}" : "ArxNode (версія невідома)");
             return;
         }
 

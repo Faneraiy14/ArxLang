@@ -10,6 +10,12 @@
       який їх не використовує, працює однаково скрізь.
     -->
     <TargetFrameworks>net10.0-windows;net10.0</TargetFrameworks>
+    <!-- Єдине джерело правди для версії, яку показує команда version у
+         ArxNode.cs (Assembly.GetName().Version), а не хардкоджений рядок
+         окремо; той раніше застарів непомітно і не відповідав жодному
+         реальному тегу чи файлу в репозиторії. Синхронізуй з git tag
+         при релізі. -->
+    <Version>1.0.0</Version>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWindowsForms Condition="'$(TargetFramework)' == 'net10.0-windows'">true</UseWindowsForms>

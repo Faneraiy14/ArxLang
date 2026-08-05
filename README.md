@@ -189,7 +189,7 @@ src/NyxilumLang/
   Core/       Lexer.cs, Parser.cs, Token.cs
   AST/        вузли дерева
   Compiler/   Compiler.cs, Bytecode.cs
-  VM/         VirtualMachine.cs — виконання + 130 нативних функцій
+  VM/         VirtualMachine.cs — виконання + 135 вбудованих функцій
   Runtime/    NxMap, NxJson, NxFunctionRef, модулі Http/Os/Graphics/Regex/WebSocket
   Tools/      Formatter.cs, Linter.cs
 

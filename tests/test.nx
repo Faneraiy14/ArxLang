@@ -1,5 +1,5 @@
 // ============================================
-// KOMPLEKSNY TEST ARX v1.0
+// KOMPLEKSNY TEST NX v1.0
 // ============================================
 
 // ----- ФУНКЦІЇ -----
@@ -45,7 +45,7 @@ func sumArray(arr: []) -> i32 {
 
 // ----- ГОЛОВНА ФУНКЦІЯ -----
 func main() {
-    print("=== ARX v1.0 COMPLEX TEST ===")
+    print("=== NX v1.0 COMPLEX TEST ===")
     print("")
 
     // 1. РЯДКИ

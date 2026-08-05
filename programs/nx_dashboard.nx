@@ -43,7 +43,7 @@ func banner(text) {
 }
 
 func main() {
-    banner("ARXNODE DASHBOARD v1.0")
+    banner("NX DASHBOARD v1.0")
 
     print("")
     print("Системна інформація:")

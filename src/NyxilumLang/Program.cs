@@ -11,7 +11,7 @@ class Program
     {
         Console.OutputEncoding = Encoding.UTF8;
         Console.WriteLine("╔═══════════════════════════════════════╗");
-        Console.WriteLine("║        ARX LANGUAGE v8.0            ║");
+        Console.WriteLine("║        NX LANGUAGE v1.0            ║");
         Console.WriteLine("║   Структури • Методи • Масиви      ║");
         Console.WriteLine("║   Файли • Математика • Рядки        ║");
         Console.WriteLine("╚═══════════════════════════════════════╝\n");
@@ -56,7 +56,7 @@ func main() {
 
     // ===== ФАЙЛИ =====
     print(""Запис у файл test.txt..."")
-    writeFile(""test.txt"", ""Привіт з ARX!"")
+    writeFile(""test.txt"", ""Привіт з NX!"")
 
     var exists = fileExists(""test.txt"")
     if (exists) {

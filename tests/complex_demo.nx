@@ -186,7 +186,7 @@ func saveReport(students, filename) {
 // ===== ГОЛОВНА ФУНКЦІЯ =====
 
 func main() {
-    banner("ARX v8.0 — СИСТЕМА УПРАВЛІННЯ ОЦІНКАМИ")
+    banner("NX v1.0 — СИСТЕМА УПРАВЛІННЯ ОЦІНКАМИ")
 
     // Створення студентів
     var s1 = Student { name: "Святослав", id: 1, grades: [] }
@@ -284,12 +284,12 @@ func main() {
 
     // ===== РЯДКОВІ ОПЕРАЦІЇ =====
     banner("РЯДКОВІ ОПЕРАЦІЇ")
-    var title = "Система управління оцінками ARX"
+    var title = "Система управління оцінками NX"
     print("  Оригінал: " + title)
     print("  Верхній регістр: " + toUpper(title))
     print("  Довжина: " + toString(len(title)))
     print("  Підрядок (0, 7): " + substring(title, 0, 7))
-    print("  Містить 'ARX': " + toString(contains(title, "ARX")))
+    print("  Містить 'NX': " + toString(contains(title, "NX")))
     print("  Замінено: " + replace(title, "NX", "Nx v1.0"))
 
     // ===== ЗБЕРЕЖЕННЯ ЗВІТУ =====

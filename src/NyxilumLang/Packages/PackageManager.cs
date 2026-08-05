@@ -91,6 +91,83 @@ public static class PackageManager
         Console.WriteLine($"Встановлено '{name}' ({ownerRepo}@{sha[..7]}), додано в {ManifestName}.");
     }
 
+    // "nx uninstall name" — прибирає запис з nx.json і видаляє
+    // nx_modules/<name>/ з диска. Не чіпає інші залежності навіть якщо
+    // видалюваний пакет був єдиним, хто фактично його потребував —
+    // менеджер тут навмисно найпростіший (owner/repo, без графа
+    // залежностей між самими пакетами), тож "осиротілих" транзитивних
+    // залежностей просто не існує як поняття.
+    public static void Uninstall(string name, string projectDir)
+    {
+        var manifest = LoadManifest(projectDir);
+        if (!manifest.Dependencies.ContainsKey(name))
+        {
+            Console.WriteLine($"'{name}' немає серед залежностей у {ManifestName} — нічого видаляти.");
+            return;
+        }
+
+        manifest.Dependencies.Remove(name);
+        SaveManifest(projectDir, manifest);
+
+        var targetDir = Path.Combine(projectDir, ModulesDir, name);
+        if (Directory.Exists(targetDir))
+            Directory.Delete(targetDir, true);
+
+        Console.WriteLine($"Видалено '{name}' з {ManifestName} і {ModulesDir}/.");
+    }
+
+    // "nx update"      — усі залежності на поточний default branch репозиторію
+    // "nx update name" — лише одну
+    //
+    // SHA-пінінг (InstallOne) робить nx.json відтворюваним, але як наслідок
+    // "nx install" без аргументів НІКОЛИ сам не підхопить новий коміт —
+    // update явно перерезолвлює owner/repo (відкидаючи вже запінений SHA)
+    // проти його ПОТОЧНОГО default branch і перезаписує пін на свіжий SHA.
+    // Якщо колись було встановлено з конкретної гілки/тегу (owner/repo@dev),
+    // update однаково піде на default branch — щоб оновитись саме в межах
+    // тієї самої гілки, простіше й чесніше повторити "nx install owner/repo@dev".
+    public static void UpdateAll(string projectDir)
+    {
+        var manifest = LoadManifest(projectDir);
+        if (manifest.Dependencies.Count == 0)
+        {
+            Console.WriteLine($"{ManifestName} не знайдено або в ньому немає залежностей — нічого оновлювати.");
+            return;
+        }
+
+        foreach (var name in manifest.Dependencies.Keys.ToList())
+            UpdateOne(name, manifest, projectDir);
+
+        SaveManifest(projectDir, manifest);
+    }
+
+    public static void UpdateSingle(string name, string projectDir)
+    {
+        var manifest = LoadManifest(projectDir);
+        if (!manifest.Dependencies.ContainsKey(name))
+        {
+            Console.WriteLine($"'{name}' немає серед залежностей у {ManifestName}. Спочатку встанови: nx install owner/repo");
+            return;
+        }
+
+        UpdateOne(name, manifest, projectDir);
+        SaveManifest(projectDir, manifest);
+    }
+
+    private static void UpdateOne(string name, Manifest manifest, string projectDir)
+    {
+        var (ownerRepo, oldRef) = SplitRef(manifest.Dependencies[name]);
+        var oldSha = oldRef ?? "";
+
+        var newSha = InstallOne(name, ownerRepo, projectDir).GetAwaiter().GetResult();
+        manifest.Dependencies[name] = $"{ownerRepo}@{newSha}";
+
+        if (oldSha.Length >= 7 && oldSha[..7] == newSha[..7])
+            Console.WriteLine($"  {name}: вже найновіше ({newSha[..7]})");
+        else
+            Console.WriteLine($"  {name}: {(oldSha.Length >= 7 ? oldSha[..7] : "?")} -> {newSha[..7]}");
+    }
+
     private static string PackageNameFrom(string source)
     {
         // "owner/repo" -> "repo"; "owner/repo@branch" -> "repo"

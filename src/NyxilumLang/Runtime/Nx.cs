@@ -47,6 +47,24 @@ public class Nx
             return;
         }
 
+        if (command == "uninstall")
+        {
+            if (args.Length < 2)
+            {
+                Console.WriteLine("Використання: nx uninstall <name>");
+                Environment.Exit(1);
+                return;
+            }
+            RunUninstall(args[1]);
+            return;
+        }
+
+        if (command == "update")
+        {
+            RunUpdate(args.Length > 1 ? args[1] : null);
+            return;
+        }
+
         if (File.Exists(command))
         {
             RunFile(command);
@@ -71,6 +89,37 @@ public class Nx
         catch (Exception ex)
         {
             Console.WriteLine($"Помилка встановлення: {ex.Message}");
+            Environment.Exit(1);
+        }
+    }
+
+    // "nx uninstall name" — прибирає залежність з nx.json і видаляє nx_modules/<name>/
+    private static void RunUninstall(string name)
+    {
+        try
+        {
+            PackageManager.Uninstall(name, Directory.GetCurrentDirectory());
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Помилка видалення: {ex.Message}");
+            Environment.Exit(1);
+        }
+    }
+
+    // "nx update"      — усі залежності на поточний default branch
+    // "nx update name" — лише одну
+    private static void RunUpdate(string? name)
+    {
+        try
+        {
+            var projectDir = Directory.GetCurrentDirectory();
+            if (name == null) PackageManager.UpdateAll(projectDir);
+            else PackageManager.UpdateSingle(name, projectDir);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Помилка оновлення: {ex.Message}");
             Environment.Exit(1);
         }
     }

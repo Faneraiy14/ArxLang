@@ -1,0 +1,22 @@
+// httpServer(port, handler) блокує назавжди (як guiShow), тому не в
+// автоматичному прогоні — для ручної перевірки: запустити й у другому
+// терміналі curl http://localhost:8765/
+//
+// Раніше httpServer(port) створював HttpListener і одразу повертав його
+// в NyxilumLang, але не було способу прийняти запит чи відповісти — кожен
+// клієнт зависав би назавжди. Тепер сама веде цикл прийому запитів і
+// викликає NyxilumLang-колбек на кожен — той самий підхід, що й guiOnAction.
+
+func handler(path, method) {
+    print("Запит: " + method + " " + path)
+    if path == "/" {
+        return "Привіт з NyxilumLang HTTP-сервера!"
+    }
+    return "Не знайдено: " + path
+}
+
+func main() {
+    httpServer(8765, handler)
+}
+
+main()

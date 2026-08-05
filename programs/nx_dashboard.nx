@@ -1,0 +1,93 @@
+// ============================================================
+// Nx Dashboard — реальна утиліта діагностики системи й мережі
+// Показує інформацію про ОС, перевіряє доступність кількох сайтів
+// через Nx HTTP-модуль і веде історію запусків у лог-файлі.
+// ============================================================
+
+struct SiteCheck {
+    name: string
+    url: string
+    status: i32
+    online: bool
+
+    func describe() {
+        var mark = "OFFLINE"
+        if self.online {
+            mark = "ONLINE "
+        }
+        return "  [" + mark + "] " + self.name + " (" + self.url + ") -> HTTP " + toString(self.status)
+    }
+}
+
+func checkSite(name, url) {
+    var code = urlStatus(url)
+    var online = code >= 200 && code < 400
+    return SiteCheck { name: name, url: url, status: code, online: online }
+}
+
+func repeatChar(ch, times) {
+    var result = ""
+    var i = 0
+    while i < times {
+        result = result + ch
+        i = i + 1
+    }
+    return result
+}
+
+func banner(text) {
+    var line = repeatChar("=", 56)
+    print(line)
+    print("  " + text)
+    print(line)
+}
+
+func main() {
+    banner("ARXNODE DASHBOARD v1.0")
+
+    print("")
+    print("Системна інформація:")
+    print("  ОС:          " + osPlatform())
+    print("  Архітектура: " + osArchitecture())
+    print("  Пам'ять:     " + toString(osMemory()) + " МБ")
+    print("  Ядер CPU:    " + toString(osCpuCount()))
+    print("  Каталог:     " + osCwd())
+    print("  Час:         " + now())
+
+    print("")
+    print("Перевірка мережі:")
+
+    var sites = []
+    append(sites, checkSite("Google", "https://www.google.com"))
+    append(sites, checkSite("GitHub", "https://github.com"))
+    append(sites, checkSite("Cloudflare DNS", "https://1.1.1.1"))
+    append(sites, checkSite("Anthropic", "https://www.anthropic.com"))
+
+    var i = 0
+    var upCount = 0
+    var total = len(sites)
+    while i < total {
+        var site = sites[i]
+        print(site.describe())
+        if site.online {
+            upCount = upCount + 1
+        }
+        i = i + 1
+    }
+
+    print("")
+    print("Підсумок: " + toString(upCount) + "/" + toString(total) + " сайтів онлайн")
+
+    var report = "[" + now() + "] " + osPlatform() + " | Пам'ять: " + toString(osMemory()) + "МБ | Мережа: " + toString(upCount) + "/" + toString(total) + "\n"
+    appendFile("nx_dashboard.log", report)
+
+    if fileExists("nx_dashboard.log") {
+        var history = readFile("nx_dashboard.log")
+        var lines = split(history, "\n")
+        var totalRuns = len(lines) - 1
+        print("Звіт додано до nx_dashboard.log (всього запусків: " + toString(totalRuns) + ")")
+    }
+
+    print("")
+    banner("ГОТОВО")
+}

@@ -1,7 +1,0 @@
-// Вибірковий import з іменем, якого нема у файлі, має впасти одразу
-// при резолві imports (ще до компіляції) з чіткою помилкою - EXPECT_ERROR.
-import "modules/lib_selective.arx" { square, doesNotExist }
-
-func main() {
-    print(square(5))
-}

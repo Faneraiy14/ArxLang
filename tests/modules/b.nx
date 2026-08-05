@@ -1,0 +1,10 @@
+import "a.nx"
+
+func fromB() {
+    return "з файлу B"
+}
+
+func main() {
+    print(fromA())
+    print(fromB())
+}

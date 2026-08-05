@@ -1,0 +1,47 @@
+// Робочий калькулятор з реальними кнопками. guiOnAction() раніше
+// підписував обробник, який нічого не робив (не мав доступу до VM,
+// щоб викликати NyxilumLang-функцію) — тепер клік дійсно виконує колбек.
+//
+// display/win — глобальні: appendDigit/onClear викликаються з кліку
+// кнопки, а не з main(), тож їм потрібен доступ до тих самих об'єктів,
+// а не локальні копії з тіла main().
+
+var current = "0"
+var win = guiWindow("Nx Calculator", 300, 400)
+var display = guiTextBox(10, 10, 260, 40)
+
+func appendDigit(d) {
+    if current == "0" {
+        current = d
+    } else {
+        current = current + d
+    }
+    guiSetText(display, current)
+}
+
+func onClear() {
+    current = "0"
+    guiSetText(display, current)
+}
+
+func main() {
+    guiAdd(win, display)
+
+    var btn1 = guiButton("1", 10, 60, 50, 50)
+    var btn2 = guiButton("2", 70, 60, 50, 50)
+    var btn3 = guiButton("3", 130, 60, 50, 50)
+    var btnClear = guiButton("C", 190, 60, 50, 50)
+
+    guiOnAction(btn1, func() { appendDigit("1") })
+    guiOnAction(btn2, func() { appendDigit("2") })
+    guiOnAction(btn3, func() { appendDigit("3") })
+    guiOnAction(btnClear, onClear)
+
+    guiAdd(win, btn1)
+    guiAdd(win, btn2)
+    guiAdd(win, btn3)
+    guiAdd(win, btnClear)
+
+    print("Вікно створено. Натискай цифри — дисплей оновлюється по-справжньому.")
+    guiShow(win)
+}

@@ -1,0 +1,146 @@
+// ============================================================
+// LEXER — токенізація вихідного коду підмножини NyxilumLang.
+// Кожен токен — мапа {type, value}.
+// ============================================================
+
+func isDigit(c) {
+    var code = charCode(c)
+    return code >= 48 && code <= 57
+}
+
+func isAlpha(c) {
+    var code = charCode(c)
+    if (code >= 65 && code <= 90) || (code >= 97 && code <= 122) || code == 95 {
+        return true
+    }
+    // Кирилиця: сам хост приймає її в іменах (char.IsLetter у Lexer.cs),
+    // тому самохост має поводитись так само — інакше та сама програма
+    // працює під хостом і ламається під самохостом.
+    // А-я = 1040..1103, ё/Ё = 1025/1105, українські ґєіїҐЄІЇ = 1028..1111.
+    if code >= 1040 && code <= 1103 {
+        return true
+    }
+    if code == 1025 || code == 1105 {
+        return true
+    }
+    if code >= 1028 && code <= 1031 {
+        return true
+    }
+    if code >= 1108 && code <= 1111 {
+        return true
+    }
+    if code == 1168 || code == 1169 {
+        return true
+    }
+    return false
+}
+
+func isAlphaNum(c) {
+    return isAlpha(c) || isDigit(c)
+}
+
+func isKeyword(word) {
+    var keywords = ["var", "if", "else", "while", "for", "in", "func", "return",
+        "print", "true", "false", "null", "struct", "self"]
+    for kw in keywords {
+        if kw == word {
+            return true
+        }
+    }
+    return false
+}
+
+func makeToken(type_, value) {
+    var tok = newMap()
+    mapSet(tok, "type", type_)
+    mapSet(tok, "value", value)
+    return tok
+}
+
+func tokenize(source) {
+    var tokens = []
+    var pos = 0
+    var length = len(source)
+    var twoCharOps = ["==", "!=", "<=", ">=", "&&", "||", ".."]
+
+    while pos < length {
+        var c = substring(source, pos, 1)
+
+        if c == " " || c == "\n" || c == "\r" || c == "\t" {
+            pos = pos + 1
+        } else if c == "/" && pos + 1 < length && substring(source, pos + 1, 1) == "/" {
+            while pos < length && substring(source, pos, 1) != "\n" {
+                pos = pos + 1
+            }
+        } else if isDigit(c) {
+            var num = ""
+            while pos < length && isDigit(substring(source, pos, 1)) {
+                num = num + substring(source, pos, 1)
+                pos = pos + 1
+            }
+            if pos + 1 < length && substring(source, pos, 1) == "." && substring(source, pos + 1, 1) != "." {
+                num = num + "."
+                pos = pos + 1
+                while pos < length && isDigit(substring(source, pos, 1)) {
+                    num = num + substring(source, pos, 1)
+                    pos = pos + 1
+                }
+            }
+            append(tokens, makeToken("NUMBER", num))
+        } else if isAlpha(c) {
+            var word = ""
+            while pos < length && isAlphaNum(substring(source, pos, 1)) {
+                word = word + substring(source, pos, 1)
+                pos = pos + 1
+            }
+            var tokType = "IDENT"
+            if isKeyword(word) {
+                tokType = "KEYWORD"
+            }
+            append(tokens, makeToken(tokType, word))
+        } else if c == "\"" {
+            pos = pos + 1
+            var str = ""
+            while pos < length && substring(source, pos, 1) != "\"" {
+                var sc = substring(source, pos, 1)
+                if sc == "\\" && pos + 1 < length {
+                    var esc = substring(source, pos + 1, 1)
+                    if esc == "n" {
+                        str = str + "\n"
+                    } else if esc == "t" {
+                        str = str + "\t"
+                    } else {
+                        str = str + esc
+                    }
+                    pos = pos + 2
+                } else {
+                    str = str + sc
+                    pos = pos + 1
+                }
+            }
+            pos = pos + 1
+            append(tokens, makeToken("STRING", str))
+        } else {
+            var next = ""
+            if pos + 1 < length {
+                next = substring(source, pos + 1, 1)
+            }
+            var twoChar = c + next
+            var matched = false
+            for twoOp in twoCharOps {
+                if twoOp == twoChar {
+                    append(tokens, makeToken("OP", twoChar))
+                    pos = pos + 2
+                    matched = true
+                }
+            }
+            if !matched {
+                append(tokens, makeToken("OP", c))
+                pos = pos + 1
+            }
+        }
+    }
+
+    append(tokens, makeToken("EOF", ""))
+    return tokens
+}

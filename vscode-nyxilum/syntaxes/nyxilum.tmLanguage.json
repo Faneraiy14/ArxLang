@@ -1,0 +1,82 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "NyxilumLang",
+  "scopeName": "source.nyxilum",
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#strings" },
+    { "include": "#numbers" },
+    { "include": "#keywords" },
+    { "include": "#constants" },
+    { "include": "#types" },
+    { "include": "#struct-literal" },
+    { "include": "#function-call" },
+    { "include": "#operators" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.nyxilum",
+          "match": "//.*$"
+        },
+        {
+          "name": "comment.block.nyxilum",
+          "begin": "/\\*",
+          "end": "\\*/"
+        }
+      ]
+    },
+    "strings": {
+      "name": "string.quoted.double.nyxilum",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        {
+          "name": "constant.character.escape.nyxilum",
+          "match": "\\\\."
+        }
+      ]
+    },
+    "numbers": {
+      "name": "constant.numeric.nyxilum",
+      "match": "\\b\\d+(\\.\\d+)?\\b"
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.nyxilum",
+          "match": "\\b(if|else|while|for|in|return|break|continue|try|catch|throw|import)\\b"
+        },
+        {
+          "name": "storage.type.nyxilum",
+          "match": "\\b(func|var|struct)\\b"
+        },
+        {
+          "name": "variable.language.self.nyxilum",
+          "match": "\\bself\\b"
+        }
+      ]
+    },
+    "constants": {
+      "name": "constant.language.nyxilum",
+      "match": "\\b(true|false|null)\\b"
+    },
+    "types": {
+      "name": "support.type.nyxilum",
+      "match": "\\b(i32|f64|string|bool)\\b"
+    },
+    "struct-literal": {
+      "name": "entity.name.type.nyxilum",
+      "match": "\\b([A-ZА-ЯЇІЄҐ][A-Za-zА-Яа-яЇїІіЄєҐґ0-9_]*)\\s*(?=\\{)"
+    },
+    "function-call": {
+      "match": "\\b([A-Za-zА-Яа-яЇїІіЄєҐґ_][A-Za-zА-Яа-яЇїІіЄєҐґ0-9_]*)\\s*(?=\\()",
+      "name": "entity.name.function.nyxilum"
+    },
+    "operators": {
+      "name": "keyword.operator.nyxilum",
+      "match": "(\\+|-|\\*|/|%|==|!=|<=|>=|<|>|&&|\\|\\||!|=|\\.\\.)"
+    }
+  }
+}

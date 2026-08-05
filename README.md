@@ -1,14 +1,14 @@
-# ArxLang
+# NyxilumLang
 
 Мова програмування власної розробки: компілятор у байткод, стекова віртуальна
 машина та стандартна бібліотека з 135 вбудованих функцій — від математики й
 рядків до HTTP, графіки та вводу з клавіатури.
 
-**Мова самохостована**: у `selfhosted/` лежить інтерпретатор ArxLang,
-написаний **мовою ArxLang**, який виконує програми з рекурсією, структурами,
+**Мова самохостована**: у `selfhosted/` лежить інтерпретатор NyxilumLang,
+написаний **мовою NyxilumLang**, який виконує програми з рекурсією, структурами,
 методами, масивами та замиканнями.
 
-```arx
+```nx
 func factorial(n) {
     if (n <= 1) { return 1 }
     return n * factorial(n - 1)
@@ -38,27 +38,27 @@ Linux і Mac. З вихідного коду (потрібен [.NET SDK 10](htt
 крос-платформний):
 
 ```bash
-dotnet build src/ArxLang
+dotnet build src/NyxilumLang
 ```
 
 Windows:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File install-arx.ps1
+powershell -ExecutionPolicy Bypass -File install-nx.ps1
 ```
 
 Linux/Mac (без GUI/графіки — тільки Windows Forms підтримує їх, решта мови
 працює однаково):
 
 ```bash
-bash install-arx.sh
+bash install-nx.sh
 ```
 
-Обидва скрипти самі знаходять зібраний бінарник у `src/ArxLang/bin/.../publish/`
-і реєструють глобальну команду `arx`. Після цього — нове вікно термінала і:
+Обидва скрипти самі знаходять зібраний бінарник у `src/NyxilumLang/bin/.../publish/`
+і реєструють глобальну команду `nx`. Після цього — нове вікно термінала і:
 
 ```bash
-arx myprogram.arx
+nx myprogram.nx
 ```
 
 ## Що вміє мова
@@ -77,10 +77,10 @@ arx myprogram.arx
 | `break` / `continue` | працюють у всіх циклах, зокрема вкладених |
 | Кирилиця в іменах | `func привітати(імя) { ... }` |
 | Помилки | `try { ... } catch (e) { ... }`, `throw`, повідомлення містять номер рядка |
-| Модулі | `import "helpers.arx"`, вибірково `import "helpers.arx" { func1, func2 }` |
+| Модулі | `import "helpers.nx"`, вибірково `import "helpers.nx" { func1, func2 }` |
 | Вищий порядок | `mapArr`, `filter`, `reduce`, `sort` |
 | GC-інструментарій | `gc_stats()`, `gc_collect()`, `gc_limit(n)` |
-| Оптимізація гарячих циклів | автоматично, вимикається через `ARX_JIT=0` |
+| Оптимізація гарячих циклів | автоматично, вимикається через `NX_JIT=0` |
 | Вбудована БД | `dbOpen`, `dbGet/dbSet/dbHas/dbDelete`, `dbKeys`, `dbCount` — персистентна KV-база з WAL |
 | Конкурентність | `spawn(fn, ...args)`/`workerJoin(w)` — ізольовані воркери; `newChannel`/`channelSend`/`channelReceive` |
 
@@ -88,13 +88,13 @@ arx myprogram.arx
 `indexOf`, `reverse`), масиви (`slice`, `unique`, `indexOf`, `reverse`),
 мапи, JSON, файли, час, HTTP-запити, 2D-графіку на канвасі, зчитування
 клавіш та GUI-вікна на Windows Forms з робочими кнопками (`guiWindow`,
-`guiButton`, `guiOnAction` — клік дійсно викликає ArxLang-функцію).
+`guiButton`, `guiOnAction` — клік дійсно викликає NyxilumLang-функцію).
 
 ### Пам'ять і GC
 
-ArxLang-значення — це боксовані CLR-об'єкти, тож збиранням сміття (в тому
+NyxilumLang-значення — це боксовані CLR-об'єкти, тож збиранням сміття (в тому
 числі циклів посилань у структурах) вже коректно займається сама .NET CLR.
-Замість дублювання цього runtime додає ArxLang-скриптам облік власних
+Замість дублювання цього runtime додає NyxilumLang-скриптам облік власних
 виділень (масиви/структури/мапи) і опційний ліміт, щоб некерований цикл
 виділень не поклав хост-процес:
 
@@ -102,11 +102,11 @@ ArxLang-значення — це боксовані CLR-об'єкти, тож �
 - `gc_collect()` → форсує `GC.Collect()` і оновлює оцінку пам'яті
 - `gc_limit(n)` → встановлює ліміт кількості виділень для поточного запуску; перевищення кидає помилку, яку можна зловити через `try/catch`
 
-Ліміт також можна задати ззовні без зміни коду: `ARX_GC_MAX_OBJECTS=10000 arx script.arx`.
+Ліміт також можна задати ззовні без зміни коду: `NX_GC_MAX_OBJECTS=10000 nx script.nx`.
 
 ### Оптимізація гарячих циклів (JIT)
 
-Значення ArxLang — боксовані CLR-об'єкти, тож "справжня" компіляція в
+Значення NyxilumLang — боксовані CLR-об'єкти, тож "справжня" компіляція в
 машинний код виграла б хіба що в диспетчеризації switch, а не в боксингу й
 словникових пошуках, які й так домінують — тобто не варта складності й
 ризику для мови без статичних типів значень. Натомість VM розпізнає у
@@ -118,18 +118,18 @@ ArxLang-значення — це боксовані CLR-об'єкти, тож �
 `try/catch`/`throw` у тілі не оптимізуються взагалі (безпечний відкат).
 
 Вимірювання на Release-збірці (цикл на 20 млн ітерацій): ~30с з увімкненою
-оптимізацією проти ~58с без неї. Вимкнути можна через `ARX_JIT=0`.
+оптимізацією проти ~58с без неї. Вимкнути можна через `NX_JIT=0`.
 
 ### Пісочниця для ненадійного коду
 
-За замовчуванням `.arx`-скрипт має повний доступ до файлової системи,
+За замовчуванням `.nx`-скрипт має повний доступ до файлової системи,
 мережі й змінних середовища — так само, як звичайний Python/Node.js-скрипт.
-Якщо ArxLang-код запускає інший сервіс від імені користувача (наприклад,
-[ArxMcp](https://github.com/Faneraiy14/ArxMcp) виконує потенційно
+Якщо NyxilumLang-код запускає інший сервіс від імені користувача (наприклад,
+[NyxilumMcp](https://github.com/Faneraiy14/NyxilumMcp) виконує потенційно
 згенерований ШІ код), увімкни обмежений режим прапорцем:
 
 ```bash
-ARX_SANDBOX=1 arx script.arx
+NX_SANDBOX=1 nx script.nx
 ```
 
 У цьому режимі:
@@ -144,10 +144,10 @@ ARX_SANDBOX=1 arx script.arx
 
 ### Вбудована база даних
 
-[ArxDb](https://github.com/Faneraiy14/ArxDb) — сестринський проєкт,
+[NyxilumDb](https://github.com/Faneraiy14/NyxilumDb) — сестринський проєкт,
 embedded KV-база з WAL-довговічністю — підключена як stdlib:
 
-```arx
+```nx
 var db = dbOpen("mydata")
 dbSet(db, "greeting", "Привіт!")
 print(dbGet(db, "greeting"))
@@ -158,18 +158,18 @@ dbClose(db)
 `dbClose(db)`, `dbSet(db,k,v)`, `dbGet(db,k)`, `dbHas(db,k)`,
 `dbDelete(db,k)`, `dbKeys(db,prefix?)`, `dbCount(db)`,
 `dbCheckpoint(db)`. Дані переживають перезапуск процесу — WAL і
-компакція описані в README ArxDb.
+компакція описані в README NyxilumDb.
 
 ### VS Code
 
-Розширення для підсвічування синтаксису `.arx` — у [vscode-arxlang/](vscode-arxlang/README.md).
+Розширення для підсвічування синтаксису `.nx` — у [vscode-nyxilum/](vscode-nyxilum/README.md).
 
 Повний опис синтаксису — у [GUIDE.md](GUIDE.md).
 
 ## Як це влаштовано
 
 ```
-Вихідний код (.arx)
+Вихідний код (.nx)
       │
    Lexer.cs        токенізація
       │
@@ -185,46 +185,46 @@ VirtualMachine.cs  стекова VM виконує байткод
 локальних змінних і власним стеком обробників `try/catch`.
 
 ```
-src/ArxLang/
+src/NyxilumLang/
   Core/       Lexer.cs, Parser.cs, Token.cs
   AST/        вузли дерева
   Compiler/   Compiler.cs, Bytecode.cs
   VM/         VirtualMachine.cs — виконання + 130 нативних функцій
-  Runtime/    ArxMap, ArxJson, ArxFunctionRef, модулі Http/Os/Graphics/Regex/WebSocket
+  Runtime/    NxMap, NxJson, NxFunctionRef, модулі Http/Os/Graphics/Regex/WebSocket
   Tools/      Formatter.cs, Linter.cs
 
-selfhosted/   інтерпретатор ArxLang, написаний на ArxLang
+selfhosted/   інтерпретатор NyxilumLang, написаний на NyxilumLang
 bootstrap/    ранній мінімальний самохост
 tests/        тести + run_all.sh
-programs/     приклади (arxnode_dashboard — системний дашборд, guess_the_number — гра "вгадай число")
-lib/          стандартна бібліотека .arx-модулів (strings, collections, datetime, testing, http_client, telegram, discord) — підключаються через import
+programs/     приклади (nx_dashboard — системний дашборд, guess_the_number — гра "вгадай число")
+lib/          стандартна бібліотека .nx-модулів (strings, collections, datetime, testing, http_client, telegram, discord) — підключаються через import
 ```
 
 ## Команди
 
 | Команда | Що робить |
 |---|---|
-| `arx файл.arx` | запустити файл |
-| `arx` | REPL — виконання рядок за рядком, `exit()` для виходу |
-| `arx install owner/repo` | встановити пакет, додати в `arx.json` |
-| `arx install` | встановити все з `arx.json` |
-| `arx format файл.arx` | форматувати файл (виводить у консоль) |
-| `arx lint файл.arx` | перевірити файл на типові помилки |
-| `arx --version` | версія |
+| `nx файл.nx` | запустити файл |
+| `nx` | REPL — виконання рядок за рядком, `exit()` для виходу |
+| `nx install owner/repo` | встановити пакет, додати в `nx.json` |
+| `nx install` | встановити все з `nx.json` |
+| `nx format файл.nx` | форматувати файл (виводить у консоль) |
+| `nx lint файл.nx` | перевірити файл на типові помилки |
+| `nx --version` | версія |
 
 Кожна деталь про пакети — у розділі [«Менеджер пакетів»](#менеджер-пакетів)
-нижче; про саму установку `arx` — у [INSTALL.md](INSTALL.md).
+нижче; про саму установку `nx` — у [INSTALL.md](INSTALL.md).
 
 ## Менеджер пакетів
 
 Пакетів "офіційного реєстру" немає — пакет це будь-який публічний
-GitHub-репозиторій із `main.arx` у корені. Установка:
+GitHub-репозиторій із `main.nx` у корені. Установка:
 
 ```bash
-arx install owner/repo
+nx install owner/repo
 ```
 
-Тягне репозиторій, кладе в `arx_modules/<repo>/` і дописує в `arx.json`
+Тягне репозиторій, кладе в `nx_modules/<repo>/` і дописує в `nx.json`
 поруч із твоїм файлом. Записується не назва гілки, а точний SHA коміта,
 на якому вона стояла в момент установки (SHA-пінінг):
 
@@ -232,18 +232,18 @@ arx install owner/repo
 { "dependencies": { "repo": "owner/repo@4b99d80c38cbbbff2abfe957eb869efc47452ffa" } }
 ```
 
-Це робить установку відтворюваною: наступний `arx install` завжди дістане
+Це робить установку відтворюваною: наступний `nx install` завжди дістане
 той самий байт-в-байт вміст, навіть якщо гілку пакета оновили чи переписали
 заднім числом. Можна вказати конкретну гілку/тег/коміт при установці
-(`arx install owner/repo@dev`) — вона так само буде зафіксована як SHA
-у `arx.json` одразу після встановлення.
+(`nx install owner/repo@dev`) — вона так само буде зафіксована як SHA
+у `nx.json` одразу після встановлення.
 
-Без аргументу `arx install` ставить усе з `arx.json` — так само,
+Без аргументу `nx install` ставить усе з `nx.json` — так само,
 як `npm install` без пакета ставить усе з `package.json`.
 
-Підключення — імпорт без `.arx`:
+Підключення — імпорт без `.nx`:
 
-```arx
+```nx
 import "repo"
 
 func main() {
@@ -260,14 +260,14 @@ func main() {
 
 | Файл | Що робить |
 |---|---|
-| `lexer.arx` | токенізація |
-| `parser.arx` | рекурсивний спуск, AST у вигляді мап |
-| `interpreter.arx` | обхід AST, середовища-ланцюжки, замикання |
-| `main.arx` | точка входу, запускає гостьову програму |
+| `lexer.nx` | токенізація |
+| `parser.nx` | рекурсивний спуск, AST у вигляді мап |
+| `interpreter.nx` | обхід AST, середовища-ланцюжки, замикання |
+| `main.nx` | точка входу, запускає гостьову програму |
 
 ```bash
 cd selfhosted
-arx main.arx
+nx main.nx
 ```
 
 Очікуваний вивід: `720 / 5 / 100 / 30 / 1 2 3 / 256 / ПРИВІТ` — рекурсія,
@@ -290,28 +290,29 @@ arx main.arx
 bash tests/run_all.sh
 ```
 
-45 тестів: рекурсія, замикання, фрейми, мапи, методи, стандартна бібліотека
-мови, `try/catch`, модулі (звичайний і вибірковий import), `lib/testing.arx`,
-`lib/strings.arx`, `lib/collections.arx`, `lib/datetime.arx`, самохостинг,
+49 тестів: рекурсія, замикання, фрейми, мапи, методи, стандартна бібліотека
+мови, `try/catch`, модулі (звичайний і вибірковий import), `lib/testing.nx`,
+`lib/strings.nx`, `lib/collections.nx`, `lib/datetime.nx`, самохостинг,
 `break`/`continue`, глобальні змінні, рівність чисел, умови з дужками,
 виклик результату виклику напряму, відкидання дробової частини (`toInt`,
 індекси масивів), вкладені іменовані функції з лексичною видимістю,
-GC-інструментарій, regex, JIT (побайтова ідентичність з ARX_JIT=0/1),
-вбудована БД (ArxDb). Графічні тести й HTTP-сервер пропускаються
-автоматично — вони відкривають вікна/слухають порт назавжди.
+GC-інструментарій, regex, JIT (побайтова ідентичність з NX_JIT=0/1),
+вбудована БД (NyxilumDb), конкурентність (`spawn`/`workerJoin`/канали,
+включно зі стрес-тестом на гонки даних). Графічні тести й HTTP-сервер
+пропускаються автоматично — вони відкривають вікна/слухають порт назавжди.
 
 Тести, де помилка є **очікуваним** результатом (наприклад необроблений
 `throw`), перелічені в `EXPECT_ERROR` усередині скрипта: для них провалом
 вважається якраз відсутність помилки.
 
-## Команда arx
+## Команда nx
 
-Ставиться разом з мовою — `install-arx.ps1` з готового релізу чи з клону
+Ставиться разом з мовою — `install-nx.ps1` з готового релізу чи з клону
 репозиторію, детальніше в [INSTALL.md](INSTALL.md). Після встановлення
 з будь-якої папки:
 
 ```bash
-arx myprogram.arx
+nx myprogram.nx
 ```
 
 ## Відомі обмеження

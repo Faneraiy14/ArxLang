@@ -1,0 +1,311 @@
+// ============================================================
+// COMPLEX DEMO — Система управління оцінками студентів
+// Тестує: структури, методи, масиви, файли, рядки, математику,
+//         цикли, умови, рекурсію, нативні функції
+// ============================================================
+
+// ===== СТРУКТУРИ =====
+
+struct Student {
+    name: string
+    id: i32
+    grades: []
+
+    func addGrade(grade) {
+        append(self.grades, grade)
+    }
+
+    func average() {
+        var total = 0.0
+        var i = 0
+        var count = len(self.grades)
+        while i < count {
+            total = total + self.grades[i]
+            i = i + 1
+        }
+        if count == 0 {
+            return 0.0
+        }
+        return total / count
+    }
+
+    func highest() {
+        var best = self.grades[0]
+        var i = 1
+        var count = len(self.grades)
+        while i < count {
+            if self.grades[i] > best {
+                best = self.grades[i]
+            }
+            i = i + 1
+        }
+        return best
+    }
+
+    func lowest() {
+        var worst = self.grades[0]
+        var i = 1
+        var count = len(self.grades)
+        while i < count {
+            if self.grades[i] < worst {
+                worst = self.grades[i]
+            }
+            i = i + 1
+        }
+        return worst
+    }
+
+    func letterGrade() {
+        var avg = self.average()
+        if avg >= 90 {
+            return "A"
+        } else if avg >= 80 {
+            return "B"
+        } else if avg >= 70 {
+            return "C"
+        } else if avg >= 60 {
+            return "D"
+        } else {
+            return "F"
+        }
+    }
+
+    func printReport() {
+        var avg = self.average()
+        var letter = self.letterGrade()
+        print("  Студент: " + self.name + " (ID: " + toString(self.id) + ")")
+        print("  Оцінки: " + toString(len(self.grades)) + " шт.")
+        print("  Середня: " + toString(round(avg * 100) / 100))
+        print("  Найвища: " + toString(self.highest()))
+        print("  Найнижча: " + toString(self.lowest()))
+        print("  Літерна оцінка: " + letter)
+    }
+}
+
+// ===== ДОПОМІЖНІ ФУНКЦІЇ =====
+
+func repeat(str, times) {
+    var result = ""
+    var i = 0
+    while i < times {
+        result = result + str
+        i = i + 1
+    }
+    return result
+}
+
+func divider() {
+    print(repeat("=", 50))
+}
+
+func banner(text) {
+    var line = repeat("=", 50)
+    print(line)
+    print("  " + text)
+    print(line)
+}
+
+func gradeBar(avg) {
+    var filled = round(avg / 10)
+    var bar = "["
+    var i = 0
+    while i < 10 {
+        if i < filled {
+            bar = bar + "█"
+        } else {
+            bar = bar + "░"
+        }
+        i = i + 1
+    }
+    bar = bar + "] " + toString(round(avg)) + "%"
+    return bar
+}
+
+// Bubble sort студентів за середньою оцінкою (desc)
+func sortStudentsByAverage(students) {
+    var n = len(students)
+    var i = 0
+    while i < n - 1 {
+        var j = 0
+        while j < n - i - 1 {
+            var s1 = students[j]
+            var s2 = students[j + 1]
+            if s1.average() < s2.average() {
+                students[j] = s2
+                students[j + 1] = s1
+            }
+            j = j + 1
+        }
+        i = i + 1
+    }
+}
+
+func classAverage(students) {
+    var total = 0.0
+    var i = 0
+    var n = len(students)
+    while i < n {
+        total = total + students[i].average()
+        i = i + 1
+    }
+    return total / n
+}
+
+func countByGrade(students, letter) {
+    var count = 0
+    var i = 0
+    var n = len(students)
+    while i < n {
+        if students[i].letterGrade() == letter {
+            count = count + 1
+        }
+        i = i + 1
+    }
+    return count
+}
+
+func saveReport(students, filename) {
+    var report = "ЗВІТ ПО СТУДЕНТАХ\n"
+    report = report + "Згенеровано: " + now() + "\n"
+    report = report + repeat("=", 50) + "\n"
+    var i = 0
+    var n = len(students)
+    while i < n {
+        var s = students[i]
+        report = report + toString(i + 1) + ". " + s.name
+        report = report + " | Середня: " + toString(round(s.average() * 10) / 10)
+        report = report + " | Оцінка: " + s.letterGrade() + "\n"
+        i = i + 1
+    }
+    report = report + repeat("=", 50) + "\n"
+    report = report + "Середня по класу: " + toString(round(classAverage(students) * 10) / 10) + "\n"
+    writeFile(filename, report)
+    print("Звіт збережено у: " + filename)
+}
+
+// ===== ГОЛОВНА ФУНКЦІЯ =====
+
+func main() {
+    banner("ARX v8.0 — СИСТЕМА УПРАВЛІННЯ ОЦІНКАМИ")
+
+    // Створення студентів
+    var s1 = Student { name: "Святослав", id: 1, grades: [] }
+    var s2 = Student { name: "Аліна",     id: 2, grades: [] }
+    var s3 = Student { name: "Богдан",    id: 3, grades: [] }
+    var s4 = Student { name: "Дарина",    id: 4, grades: [] }
+    var s5 = Student { name: "Олексій",   id: 5, grades: [] }
+
+    // Додаємо оцінки через методи структури
+    s1.addGrade(95)
+    s1.addGrade(88)
+    s1.addGrade(92)
+    s1.addGrade(97)
+    s1.addGrade(100)
+
+    s2.addGrade(72)
+    s2.addGrade(68)
+    s2.addGrade(75)
+    s2.addGrade(80)
+    s2.addGrade(71)
+
+    s3.addGrade(55)
+    s3.addGrade(60)
+    s3.addGrade(58)
+    s3.addGrade(62)
+    s3.addGrade(57)
+
+    s4.addGrade(88)
+    s4.addGrade(91)
+    s4.addGrade(85)
+    s4.addGrade(90)
+    s4.addGrade(93)
+
+    s5.addGrade(100)
+    s5.addGrade(98)
+    s5.addGrade(99)
+    s5.addGrade(97)
+    s5.addGrade(100)
+
+    // Зберігаємо в динамічний масив
+    var students = []
+    append(students, s1)
+    append(students, s2)
+    append(students, s3)
+    append(students, s4)
+    append(students, s5)
+
+    // ===== ІНДИВІДУАЛЬНІ ЗВІТИ =====
+    banner("ІНДИВІДУАЛЬНІ ЗВІТИ")
+    var i = 0
+    var n = len(students)
+    while i < n {
+        var s = students[i]
+        s.printReport()
+        print("  Прогрес: " + gradeBar(s.average()))
+        print("")
+        i = i + 1
+    }
+
+    // ===== СОРТУВАННЯ =====
+    banner("РЕЙТИНГ (від найкращого до найгіршого)")
+    sortStudentsByAverage(students)
+    i = 0
+    while i < n {
+        var s = students[i]
+        var avg = round(s.average() * 10) / 10
+        print("  " + toString(i + 1) + ". " + s.name + " — " + toString(avg) + " (" + s.letterGrade() + ")")
+        i = i + 1
+    }
+
+    // ===== СТАТИСТИКА КЛАСУ =====
+    banner("СТАТИСТИКА КЛАСУ")
+    var ca = classAverage(students)
+    print("  Середня по класу: " + toString(round(ca * 100) / 100))
+    print("  Прогрес класу: " + gradeBar(ca))
+    print("")
+    print("  Розподіл оцінок:")
+    print("    A (90-100): " + toString(countByGrade(students, "A")) + " студент(и)")
+    print("    B (80-89):  " + toString(countByGrade(students, "B")) + " студент(и)")
+    print("    C (70-79):  " + toString(countByGrade(students, "C")) + " студент(и)")
+    print("    D (60-69):  " + toString(countByGrade(students, "D")) + " студент(и)")
+    print("    F (0-59):   " + toString(countByGrade(students, "F")) + " студент(и)")
+
+    // ===== МАТЕМАТИЧНА СТАТИСТИКА =====
+    banner("МАТЕМАТИЧНА СТАТИСТИКА")
+    var bestAvg = students[0].average()
+    var worstAvg = students[n - 1].average()
+    var range = bestAvg - worstAvg
+    print("  Найкращий результат:  " + toString(round(bestAvg * 10) / 10))
+    print("  Найгірший результат:  " + toString(round(worstAvg * 10) / 10))
+    print("  Розмах (range):       " + toString(round(range * 10) / 10))
+    print("  sqrt(100) = " + toString(sqrt(100)))
+    print("  pow(2, 10) = " + toString(pow(2, 10)))
+    print("  abs(-42) = " + toString(abs(-42)))
+
+    // ===== РЯДКОВІ ОПЕРАЦІЇ =====
+    banner("РЯДКОВІ ОПЕРАЦІЇ")
+    var title = "Система управління оцінками ARX"
+    print("  Оригінал: " + title)
+    print("  Верхній регістр: " + toUpper(title))
+    print("  Довжина: " + toString(len(title)))
+    print("  Підрядок (0, 7): " + substring(title, 0, 7))
+    print("  Містить 'ARX': " + toString(contains(title, "ARX")))
+    print("  Замінено: " + replace(title, "NX", "Nx v1.0"))
+
+    // ===== ЗБЕРЕЖЕННЯ ЗВІТУ =====
+    banner("ЗБЕРЕЖЕННЯ У ФАЙЛ")
+    saveReport(students, "grade_report.txt")
+
+    // Перевіряємо, що файл існує та читаємо його
+    if fileExists("grade_report.txt") {
+        var content = readFile("grade_report.txt")
+        print("Файл прочитано успішно (" + toString(len(content)) + " символів)")
+    }
+
+    // ===== ПІДСУМОК =====
+    banner("ПРОГРАМУ ВИКОНАНО УСПІШНО!")
+    print("  Дата та час: " + now())
+    print("  Мова:        Nx v1.0")
+    print("  Автор:       Святослав")
+    print(repeat("=", 50))
+}

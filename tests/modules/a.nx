@@ -1,0 +1,5 @@
+import "b.nx"
+
+func fromA() {
+    return "з файлу A"
+}

@@ -1,0 +1,34 @@
+// lib/testing.nx — прості assert-функції для написання тестів на NyxilumLang,
+// у дусі Python-модуля unittest/assert. Провал - звичайний throw, тож
+// оточуй виклик тесту в try/catch (як у GUIDE.md), щоб самому вирішувати,
+// падати процесу чи ні.
+
+func assertTrue(condition, message) {
+    if !condition {
+        throw "Assertion failed: " + message
+    }
+}
+
+func assertFalse(condition, message) {
+    assertTrue(!condition, message)
+}
+
+func assertEqual(actual, expected, message) {
+    if actual != expected {
+        throw "Assertion failed: " + message + " (очікувалось " + toString(expected) + ", отримано " + toString(actual) + ")"
+    }
+}
+
+// fn - функція без аргументів (значення, як у sort(arr,cmp)); очікується,
+// що виклик fn() кине помилку - якщо не кинув, це і є провал assertThrows.
+func assertThrows(fn, message) {
+    var threw = false
+    try {
+        fn()
+    } catch (e) {
+        threw = true
+    }
+    if !threw {
+        throw "Assertion failed: " + message + " (очікувався throw, але його не було)"
+    }
+}

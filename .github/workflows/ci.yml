@@ -15,10 +15,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          path: ArxLang
+          path: NyxilumLang
 
-      # ArxLang.csproj посилається на ArxDb (сестринський репозиторій)
-      # через ProjectReference з ВІДНОСНИМ шляхом "../../../ArxDb/...",
+      # NyxilumLang.csproj посилається на ArxDb (сестринський репозиторій —
+      # ЩЕ НЕ перейменований на NyxilumDb, дивись окрему задачу) через
+      # ProjectReference з ВІДНОСНИМ шляхом "../../../ArxDb/...",
       # розрахованим на те, що обидва репо лежать поруч на диску (як у
       # локального розробника). Явний path: на ОБОХ checkout-кроках —
       # єдиний спосіб відтворити це на раннері: тоді обидва репо стають
@@ -39,15 +40,15 @@ jobs:
       # on this operating system, set the EnableWindowsTargeting property
       # to true" ще до того, як дійде до конкретного -f net10.0.
       - name: Build (net10.0)
-        working-directory: ArxLang
-        run: dotnet build src/ArxLang -f net10.0 -p:EnableWindowsTargeting=true --configuration Release
+        working-directory: NyxilumLang
+        run: dotnet build src/NyxilumLang -f net10.0 -p:EnableWindowsTargeting=true --configuration Release
 
       - name: Run test suite
-        working-directory: ArxLang
+        working-directory: NyxilumLang
         # Абсолютний шлях обов'язковий: run_all.sh сам робить cd у tests/
-        # перед тим, як перевірити $ARX_EXE — відносний шлях звідти вже
+        # перед тим, як перевірити $NX_EXE — відносний шлях звідти вже
         # вказував би не туди.
-        run: ARX_EXE="$(pwd)/src/ArxLang/bin/Release/net10.0/ArxLang" bash tests/run_all.sh
+        run: NX_EXE="$(pwd)/src/NyxilumLang/bin/Release/net10.0/Nx" bash tests/run_all.sh
 
   build-windows:
     # Окрема перевірка, що WinForms-гілка (#if WINDOWS: guiWindow,
@@ -57,7 +58,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          path: ArxLang
+          path: NyxilumLang
 
       - uses: actions/checkout@v4
         with:
@@ -69,5 +70,5 @@ jobs:
           dotnet-version: '10.0.x'
 
       - name: Build (net10.0-windows)
-        working-directory: ArxLang
-        run: dotnet build src/ArxLang -f net10.0-windows --configuration Release
+        working-directory: NyxilumLang
+        run: dotnet build src/NyxilumLang -f net10.0-windows --configuration Release

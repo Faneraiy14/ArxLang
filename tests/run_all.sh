@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================
-# run_all.sh — прогін усіх тестів ArxLang
+# run_all.sh — прогін усіх тестів NyxilumLang
 #
 # Запуск:  bash tests/run_all.sh
 #
@@ -11,23 +11,23 @@
 # ============================================================
 
 TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-EXE="${ARX_EXE:-$TESTS_DIR/../src/ArxLang/bin/Debug/net10.0-windows/ArxLang.exe}"
+EXE="${NX_EXE:-$TESTS_DIR/../src/NyxilumLang/bin/Debug/net10.0-windows/Nx.exe}"
 
 # Відкривають вікна, слухають порт назавжди або чекають на ввід —
-# у автоматичному прогоні пропускаємо. bench_loop.arx — навмисно повільний
+# у автоматичному прогоні пропускаємо. bench_loop.nx — навмисно повільний
 # неформальний бенчмарк (десятки секунд), не тест коректності.
-SKIP="test_graphics2d.arx test_graphics3d.arx calculator.arx test_http_server.arx bench_loop.arx"
+SKIP="test_graphics2d.nx test_graphics3d.nx calculator.nx test_http_server.nx bench_loop.nx"
 
 # Тести, де помилка — очікуваний результат.
-EXPECT_ERROR="test_throw_uncaught.arx test_nested_scope_error.arx test_selective_import_missing.arx test_lib_testing_fail.arx"
+EXPECT_ERROR="test_throw_uncaught.nx test_nested_scope_error.nx test_selective_import_missing.nx test_lib_testing_fail.nx"
 
 TIMEOUT_SEC=25
 
 cd "$TESTS_DIR" || exit 1
 
 if [ ! -f "$EXE" ]; then
-    echo "Не знайдено ArxLang.exe: $EXE"
-    echo "Спочатку зберіть: dotnet build src/ArxLang"
+    echo "Не знайдено Nx.exe: $EXE"
+    echo "Спочатку зберіть: dotnet build src/NyxilumLang"
     exit 1
 fi
 
@@ -40,7 +40,7 @@ in_list() {
     case " $2 " in *" $1 "*) return 0;; *) return 1;; esac
 }
 
-for f in *.arx; do
+for f in *.nx; do
     [ -e "$f" ] || continue
 
     if in_list "$f" "$SKIP"; then
@@ -85,40 +85,40 @@ for f in *.arx; do
     fi
 done
 
-# Модульні тести лежать в окремій підпапці й запускаються через main.arx
-if [ -f "modules/main.arx" ]; then
-    out=$(cd modules && timeout "$TIMEOUT_SEC" "$EXE" main.arx 2>&1)
+# Модульні тести лежать в окремій підпапці й запускаються через main.nx
+if [ -f "modules/main.nx" ]; then
+    out=$(cd modules && timeout "$TIMEOUT_SEC" "$EXE" main.nx 2>&1)
     if echo "$out" | grep -qiE "Runtime Error|Parse Error|Unhandled exception"; then
-        echo "❌ modules/main.arx"
-        fail=$((fail+1)); failed+=("modules/main.arx")
+        echo "❌ modules/main.nx"
+        fail=$((fail+1)); failed+=("modules/main.nx")
     else
-        echo "✅ modules/main.arx"
+        echo "✅ modules/main.nx"
         pass=$((pass+1))
     fi
 fi
 
 # JIT (superinstruction-оптимізація гарячих циклів, VirtualMachine.cs):
-# найважливіша перевірка — вивід З ARX_JIT увімкненим (типово) і з
-# ARX_JIT=0 має бути ПОБАЙТОВО однаковим. Розбіжність означає, що
+# найважливіша перевірка — вивід З NX_JIT увімкненим (типово) і з
+# NX_JIT=0 має бути ПОБАЙТОВО однаковим. Розбіжність означає, що
 # superinstruction десь порушує семантику, а не просто прискорює.
-if [ -f "test_jit_superops.arx" ]; then
-    jit_on=$(timeout "$TIMEOUT_SEC" "$EXE" test_jit_superops.arx 2>&1)
-    jit_off=$(timeout "$TIMEOUT_SEC" env ARX_JIT=0 "$EXE" test_jit_superops.arx 2>&1)
+if [ -f "test_jit_superops.nx" ]; then
+    jit_on=$(timeout "$TIMEOUT_SEC" "$EXE" test_jit_superops.nx 2>&1)
+    jit_off=$(timeout "$TIMEOUT_SEC" env NX_JIT=0 "$EXE" test_jit_superops.nx 2>&1)
     if [ "$jit_on" = "$jit_off" ]; then
-        echo "✅ test_jit_superops.arx — ARX_JIT=1 і ARX_JIT=0 дають однаковий вивід"
+        echo "✅ test_jit_superops.nx — NX_JIT=1 і NX_JIT=0 дають однаковий вивід"
         pass=$((pass+1))
     else
-        echo "❌ test_jit_superops.arx — вивід ARX_JIT=1 і ARX_JIT=0 РІЗНИТЬСЯ"
-        fail=$((fail+1)); failed+=("test_jit_superops.arx — розбіжність JIT on/off")
+        echo "❌ test_jit_superops.nx — вивід NX_JIT=1 і NX_JIT=0 РІЗНИТЬСЯ"
+        fail=$((fail+1)); failed+=("test_jit_superops.nx — розбіжність JIT on/off")
     fi
 fi
 
 # REPL: глобальна var і func, оголошені на одному рядку, мають лишатись
 # видимими й зі своїм значенням на наступних рядках (VirtualMachine.Globals
-# + Compiler.Compile(knownGlobals) в ArxNode.cs). print() при цьому не
+# + Compiler.Compile(knownGlobals) в Nx.cs). print() при цьому не
 # повинен повторюватись на кожному наступному рядку.
 repl_out=$(printf 'var x = 5\nfunc double(n) { return n * 2 }\nprint(x)\nprint(double(x))\nexit()\n' | timeout "$TIMEOUT_SEC" "$EXE" 2>&1)
-repl_clean=$(echo "$repl_out" | sed 's/> //g' | sed '/^ArxNode REPL\|^Type /d' | grep -v '^[[:space:]]*$')
+repl_clean=$(echo "$repl_out" | sed 's/> //g' | sed '/^Nx REPL\|^Type /d' | grep -v '^[[:space:]]*$')
 if [ "$repl_clean" = "$(printf '5\n10')" ]; then
     echo "✅ REPL — var і func зберігаються між рядками, print не дублюється"
     pass=$((pass+1))

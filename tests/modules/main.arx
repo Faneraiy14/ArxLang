@@ -1,9 +1,0 @@
-import "math_helpers.arx"
-
-func main() {
-    print("square(5) = " + toString(square(5)))
-    print("cube(3) = " + toString(cube(3)))
-
-    var v = Vector2 { x: 3, y: 4 }
-    print("довжина вектора = " + toString(v.length()))
-}

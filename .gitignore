@@ -6,10 +6,11 @@ obj/
 
 # Артефакти запусків: логи й дампи виводу, які лишаються після тестів
 *.log
-src/ArxLang/output*.txt
-src/ArxLang/grade_report.txt
-src/ArxLang/test.txt
-tests/test_arxdb_data/
+src/NyxilumLang/output*.txt
+src/NyxilumLang/grade_report.txt
+src/NyxilumLang/test.txt
+tests/grade_report.txt
+tests/test_nyxilumdb_data/
 
 # Файли IDE
 .vs/

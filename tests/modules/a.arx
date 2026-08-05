@@ -1,5 +1,0 @@
-import "b.arx"
-
-func fromA() {
-    return "з файлу A"
-}

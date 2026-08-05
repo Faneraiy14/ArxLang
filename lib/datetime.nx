@@ -1,0 +1,100 @@
+// lib/datetime.nx — арифметика календарних дат (додавання днів, різниця
+// між датами, день тижня) БЕЗ жодного нового нативного коду: чиста NyxilumLang
+// поверх алгоритму Говарда Гіннанта (public domain,
+// http://howardhinnant.github.io/date_algorithms.html) для перетворення
+// дата <-> "днів від епохи 1970-01-01" — коректно враховує високосні роки
+// (зокрема правило "ділиться на 100, але не на 400" — 1900 не високосний,
+// 2000 високосний), на відміну від наївного "365*(y-1970)+...".
+//
+// Формат рядка скрізь "yyyy-MM-dd" — той самий, що повертає вбудований today().
+
+func _pad2(n) {
+    if n < 10 {
+        return "0" + toString(n)
+    }
+    return toString(n)
+}
+
+// днів від 1970-01-01 (може бути від'ємним для дат до епохи)
+func daysFromCivil(y, m, d) {
+    var yy = y
+    if m <= 2 {
+        yy = yy - 1
+    }
+    var era = floor(yy / 400)
+    var yoe = yy - era * 400                                              // [0, 399]
+    var mp = m - 3
+    if m <= 2 {
+        mp = m + 9
+    }
+    var doy = floor((153 * mp + 2) / 5) + d - 1                           // [0, 365]
+    var doe = yoe * 365 + floor(yoe / 4) - floor(yoe / 100) + doy         // [0, 146096]
+    return era * 146097 + doe - 719468
+}
+
+// обернена до daysFromCivil: повертає [рік, місяць, день]
+func civilFromDays(z) {
+    var zz = z + 719468
+    var era = floor(zz / 146097)
+    var doe = zz - era * 146097                                          // [0, 146096]
+    var yoe = floor((doe - floor(doe / 1460) + floor(doe / 36524) - floor(doe / 146096)) / 365)  // [0, 399]
+    var y = yoe + era * 400
+    var doy = doe - (365 * yoe + floor(yoe / 4) - floor(yoe / 100))       // [0, 365]
+    var mp = floor((5 * doy + 2) / 153)                                  // [0, 11]
+    var d = doy - floor((153 * mp + 2) / 5) + 1                          // [1, 31]
+    var m = mp - 9
+    if mp < 10 {
+        m = mp + 3
+    }
+    if m <= 2 {
+        y = y + 1
+    }
+    return [y, m, d]
+}
+
+func isLeapYear(y) {
+    if y % 4 != 0 {
+        return false
+    }
+    if y % 100 != 0 {
+        return true
+    }
+    return y % 400 == 0
+}
+
+// 0 = неділя, 1 = понеділок, ..., 6 = субота (епоха 1970-01-01 - четвер)
+func dayOfWeek(y, m, d) {
+    var z = daysFromCivil(y, m, d)
+    return ((z + 4) % 7 + 7) % 7
+}
+
+func dayName(weekday) {
+    var names = ["Неділя", "Понеділок", "Вівторок", "Середа", "Четвер", "П'ятниця", "Субота"]
+    return names[weekday]
+}
+
+// n може бути від'ємним (віднімання днів)
+func addDays(y, m, d, n) {
+    return civilFromDays(daysFromCivil(y, m, d) + n)
+}
+
+// (y2,m2,d2) - (y1,m1,d1) у днях
+func diffDays(y1, m1, d1, y2, m2, d2) {
+    return daysFromCivil(y2, m2, d2) - daysFromCivil(y1, m1, d1)
+}
+
+func formatDate(y, m, d) {
+    return toString(y) + "-" + _pad2(m) + "-" + _pad2(d)
+}
+
+// парсить "yyyy-MM-dd" (той самий формат, що й today()) у [рік, місяць, день]
+func parseDate(s) {
+    var y = toInt(substring(s, 0, 4))
+    var m = toInt(substring(s, 5, 2))
+    var d = toInt(substring(s, 8, 2))
+    return [y, m, d]
+}
+
+func todayCivil() {
+    return parseDate(today())
+}

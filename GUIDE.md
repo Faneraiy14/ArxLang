@@ -1,15 +1,15 @@
 
-# ArxLang: Посібник користувача
+# NyxilumLang: Посібник користувача
 
-ArxLang - це потужна, але проста мова програмування, створена для навчання та швидкої розробки.
+NyxilumLang - це потужна, але проста мова програмування, створена для навчання та швидкої розробки.
 
 ## Основний синтаксис
 
 ### Змінні
 Використовуйте `var` для оголошення змінних.
-```arx
+```nx
 var x = 10
-var name = "Arx"
+var name = "Nyxilum"
 var isCool = true
 var nothing = null       // isNull(nothing) -> true
 ```
@@ -17,14 +17,14 @@ var nothing = null       // isNull(nothing) -> true
 ### Рядки та інтерполяція
 Конкатенація через `+` працює з будь-яким типом — число/bool/null самі
 приводяться до рядка:
-```arx
+```nx
 var вік = 20
 print("Мені " + вік + " років")   // Мені 20 років
 ```
 
 Для складніших рядків зручніша інтерполяція `${вираз}` — усередині може
-бути будь-який вираз ArxLang (змінна, арифметика, виклик функції):
-```arx
+бути будь-який вираз NyxilumLang (змінна, арифметика, виклик функції):
+```nx
 var імя = "Аня"
 var вік = 20
 print("Привіт, ${імя}! Тобі ${вік} ${вік + 1 - 1} років.")
@@ -36,13 +36,13 @@ print("Подвоєне: ${вік * 2}")
 
 Щоб `${` не вважався початком інтерполяції, а лишився звичайним
 текстом — заекрануй символ долара: `\${`.
-```arx
+```nx
 print("Ціна: \${не інтерполяція}")   // Ціна: ${не інтерполяція}
 ```
 
 ### Функції
 Функції оголошуються за допомогою `func`. Точка входу - функція `main`.
-```arx
+```nx
 func add(a, b) {
     return a + b
 }
@@ -59,7 +59,7 @@ func main() {
 функція не бачить локальних змінних "батька"; для захоплення оточення
 потрібна анонімна лямбда (`var f = func() {...}`, розділ нижче).
 
-```arx
+```nx
 func outer() {
     func inner(x) {
         return x * 2
@@ -70,7 +70,7 @@ print(outer()) // 42
 ```
 
 ### Управляючі конструкції
-```arx
+```nx
 if (x > 0) {
     print("Додатне")
 } else {
@@ -92,7 +92,7 @@ while (x > 0) {
 ```
 
 ### Структури та Методи
-```arx
+```nx
 struct Point {
     x: i32
     y: i32
@@ -115,7 +115,7 @@ func main() {
 поточного екземпляра — `self`, не `this`.
 
 ### Обробка помилок (try/catch/throw)
-```arx
+```nx
 func riskyDivide(a, b) {
     if b == 0 {
         throw "Ділення на нуль!"
@@ -134,7 +134,7 @@ func main() {
 `try`/`catch` перехоплює як явний `throw`, так і внутрішні помилки VM (вихід за межі масиву, помилки нативних функцій тощо) — програма не падає, а виконання продовжується з catch-блоку.
 
 ### Мапи/словники
-```arx
+```nx
 var ages = newMap()
 mapSet(ages, "Святослав", 14)
 print(mapGet(ages, "Святослав"))       // 14
@@ -145,7 +145,7 @@ var keys = mapKeys(ages)
 Мапа — окремий тип від `struct` (`typeOf()` повертає `"map"`), ключем може бути число, рядок або bool.
 
 ### Функції як значення та замикання
-```arx
+```nx
 func square(x) { return x * x }
 
 func apply(fn, x) { return fn(x) }
@@ -166,13 +166,13 @@ func main() {
 Замикання захоплюють значення зовнішніх змінних **копією в момент створення** лямбди (не живим посиланням) — зміна зовнішньої змінної після створення лямбди на неї не впливає.
 
 ### Модулі (import)
-```arx
-// math_helpers.arx
+```nx
+// math_helpers.nx
 func square(x) { return x * x }
 ```
-```arx
-// main.arx
-import "math_helpers.arx"
+```nx
+// main.nx
+import "math_helpers.nx"
 
 func main() {
     print(square(5))   // 25
@@ -181,8 +181,8 @@ func main() {
 Шлях в `import` — відносно файлу, що імпортує. Циклічні та повторні імпорти безпечні (кожен файл обробляється один раз).
 
 Вибірковий import — тягне лише перелічені функції/структури/глобальні змінні, а не весь файл:
-```arx
-import "math_helpers.arx" { square }
+```nx
+import "math_helpers.nx" { square }
 
 func main() {
     print(square(5))   // 25 - cube() з того ж файлу лишається неімпортованим
@@ -191,23 +191,23 @@ func main() {
 Методи названої структури підтягуються автоматично разом з нею. Якщо переліченого імені нема у файлі — помилка одразу при запуску (ще до виконання коду). Функції з іменем на `_` (напр. `_helper`) вважаються приватними хелперами модуля й тягнуться завжди, навіть якщо їх не перелічено — так публічна функція з того ж файлу може викликати свій внутрішній хелпер незалежно від того, що саме імпортує викликач.
 
 ### Стандартна бібліотека (`lib/`)
-У теці `lib/` в корені ArxEcosystem лежать готові `.arx`-модулі — підключаються звичайним `import` за відносним шляхом (`../lib/...` з файлу в `tests/`, або `lib/...`, якщо скрипт лежить поруч із самою `lib/`):
+У теці `lib/` в корені репозиторію лежать готові `.nx`-модулі — підключаються звичайним `import` за відносним шляхом (`../lib/...` з файлу в `tests/`, або `lib/...`, якщо скрипт лежить поруч із самою `lib/`):
 
-- **`lib/datetime.arx`** — арифметика дат з правильними високосними роками (алгоритм Говарда Гіннанта, чиста ArxLang): `daysFromCivil(y,m,d)`/`civilFromDays(z)` (дата <-> днів від епохи), `isLeapYear(y)`, `dayOfWeek(y,m,d)` (0=неділя), `dayName(weekday)`, `addDays(y,m,d,n)`, `diffDays(y1,m1,d1,y2,m2,d2)`, `formatDate(y,m,d)`, `parseDate(s)`, `todayCivil()`.
-- **`lib/strings.arx`** — `capitalize(s)`, `titleCase(s)`, `isBlank(s)`, `isEmpty(s)`, `padLeft(s, len, ch)`, `padRight(s, len, ch)`, `countOccurrences(s, sub)`.
-- **`lib/collections.arx`** — `range(n)`, `rangeFrom(start, end)`, `sum(arr)`, `first(arr)`, `last(arr)`, `flatten(arr)` (один рівень), `zip(arr1, arr2)`, `chunk(arr, size)`, `count(arr, fn)`.
-- **`lib/testing.arx`** — `assertTrue(cond, msg)`, `assertFalse(cond, msg)`, `assertEqual(actual, expected, msg)`, `assertThrows(fn, msg)`. Провал — звичайний `throw`, тож або лови його `try/catch` сам, або лишай непійманим, щоб процес впав з ненульовим кодом (зручно для CI).
-  ```arx
-  import "lib/testing.arx" { assertEqual }
+- **`lib/datetime.nx`** — арифметика дат з правильними високосними роками (алгоритм Говарда Гіннанта, чиста NyxilumLang): `daysFromCivil(y,m,d)`/`civilFromDays(z)` (дата <-> днів від епохи), `isLeapYear(y)`, `dayOfWeek(y,m,d)` (0=неділя), `dayName(weekday)`, `addDays(y,m,d,n)`, `diffDays(y1,m1,d1,y2,m2,d2)`, `formatDate(y,m,d)`, `parseDate(s)`, `todayCivil()`.
+- **`lib/strings.nx`** — `capitalize(s)`, `titleCase(s)`, `isBlank(s)`, `isEmpty(s)`, `padLeft(s, len, ch)`, `padRight(s, len, ch)`, `countOccurrences(s, sub)`.
+- **`lib/collections.nx`** — `range(n)`, `rangeFrom(start, end)`, `sum(arr)`, `first(arr)`, `last(arr)`, `flatten(arr)` (один рівень), `zip(arr1, arr2)`, `chunk(arr, size)`, `count(arr, fn)`.
+- **`lib/testing.nx`** — `assertTrue(cond, msg)`, `assertFalse(cond, msg)`, `assertEqual(actual, expected, msg)`, `assertThrows(fn, msg)`. Провал — звичайний `throw`, тож або лови його `try/catch` сам, або лишай непійманим, щоб процес впав з ненульовим кодом (зручно для CI).
+  ```nx
+  import "lib/testing.nx" { assertEqual }
 
   func main() {
       assertEqual(2 + 2, 4, "2+2 має дорівнювати 4")
       print("тест пройдено")
   }
   ```
-- **`lib/http_client.arx`** — обгортка над `httpGet`/`httpPost`/`httpRequest` з автоматичною JSON-серіалізацією (у дусі Python-бібліотеки `requests`): `getJson(url)`, `postJson(url, data)`, `requestJson(url, method, data)` (`data` — мапа/масив або `null`), `requestStatus(url, method, data)` — лише код статусу.
-  ```arx
-  import "lib/http_client.arx" { postJson }
+- **`lib/http_client.nx`** — обгортка над `httpGet`/`httpPost`/`httpRequest` з автоматичною JSON-серіалізацією (у дусі Python-бібліотеки `requests`): `getJson(url)`, `postJson(url, data)`, `requestJson(url, method, data)` (`data` — мапа/масив або `null`), `requestStatus(url, method, data)` — лише код статусу.
+  ```nx
+  import "lib/http_client.nx" { postJson }
 
   func main() {
       var data = newMap()
@@ -216,9 +216,9 @@ func main() {
       print(toJson(response))
   }
   ```
-- **`lib/telegram.arx`** — обгортка над [Telegram Bot API](https://core.telegram.org/bots/api) (звичайний HTTPS+JSON, без WebSocket - тому повністю реалізований на самій ArxLang): `tgGetMe(token)`, `tgSendMessage(token, chatId, text)`, `tgGetUpdates(token, offset)`, `tgMessageText(update)`, `tgChatId(update)`, і блокуючий `tgPollLoop(token, handler)` для готового бота одним викликом. Токен читай через `osEnv("TELEGRAM_BOT_TOKEN")`, ніколи не хардкодь у скрипті. Повний робочий приклад ехо-бота: `programs/telegram_echo_bot.arx`.
-  ```arx
-  import "lib/telegram.arx" { tgPollLoop, tgMessageText, tgChatId, tgSendMessage }
+- **`lib/telegram.nx`** — обгортка над [Telegram Bot API](https://core.telegram.org/bots/api) (звичайний HTTPS+JSON, без WebSocket - тому повністю реалізований на самій NyxilumLang): `tgGetMe(token)`, `tgSendMessage(token, chatId, text)`, `tgGetUpdates(token, offset)`, `tgMessageText(update)`, `tgChatId(update)`, і блокуючий `tgPollLoop(token, handler)` для готового бота одним викликом. Токен читай через `osEnv("TELEGRAM_BOT_TOKEN")`, ніколи не хардкодь у скрипті. Повний робочий приклад ехо-бота: `programs/telegram_echo_bot.nx`.
+  ```nx
+  import "lib/telegram.nx" { tgPollLoop, tgMessageText, tgChatId, tgSendMessage }
 
   func main() {
       var token = osEnv("TELEGRAM_BOT_TOKEN")
@@ -230,9 +230,9 @@ func main() {
       })
   }
   ```
-- **`lib/discord.arx`** — мінімальний [Discord Gateway](https://discord.com/developers/docs/topics/gateway)-клієнт: `dSendMessage(token, channelId, text)` (REST), і блокуючий `dPollLoop(token, intents, handler)` — сам робить handshake (Hello -> Identify -> heartbeat за розкладом сервера) через нативний `wsConnect`/`wsSend`/`wsReceive`, `handler(eventName, data)` викликається на кожну подію (`"MESSAGE_CREATE"`, `"READY"` тощо). На розрив з'єднання сервером (напр. невірний токен - код 4004) виходить з циклу з чітким повідомленням, а не зависає чи падає. Токен - через `osEnv("DISCORD_BOT_TOKEN")`. Повний приклад: `programs/discord_echo_bot.arx`.
-  ```arx
-  import "lib/discord.arx" { dPollLoop, dSendMessage }
+- **`lib/discord.nx`** — мінімальний [Discord Gateway](https://discord.com/developers/docs/topics/gateway)-клієнт: `dSendMessage(token, channelId, text)` (REST), і блокуючий `dPollLoop(token, intents, handler)` — сам робить handshake (Hello -> Identify -> heartbeat за розкладом сервера) через нативний `wsConnect`/`wsSend`/`wsReceive`, `handler(eventName, data)` викликається на кожну подію (`"MESSAGE_CREATE"`, `"READY"` тощо). На розрив з'єднання сервером (напр. невірний токен - код 4004) виходить з циклу з чітким повідомленням, а не зависає чи падає. Токен - через `osEnv("DISCORD_BOT_TOKEN")`. Повний приклад: `programs/discord_echo_bot.nx`.
+  ```nx
+  import "lib/discord.nx" { dPollLoop, dSendMessage }
 
   func main() {
       var token = osEnv("DISCORD_BOT_TOKEN")
@@ -246,7 +246,7 @@ func main() {
   Не забудь увімкнути "Message Content Intent" у Discord Developer Portal - без нього `content` завжди порожній.
 
 ### Функції вищого порядку та JSON
-```arx
+```nx
 var nums = [5, 2, 8, 1]
 var sorted = sort(nums, func(a, b) { return a - b })
 var squares = mapArr(nums, func(x) { return x * x })
@@ -269,7 +269,7 @@ var back = fromJson("[1,2,3]")   // масив
 масиву/мапи/структури в головному потоці ПІСЛЯ spawn ніяк не вплине на
 вже запущеного воркера, і навпаки.
 
-```arx
+```nx
 func important(n) {
     return n * n
 }
@@ -285,7 +285,7 @@ func main() {
 `workerJoin` прокидає її далі, її можна зловити звичайним `try/catch`.
 
 Кілька воркерів одночасно:
-```arx
+```nx
 var workers = []
 var i = 0
 while i < 10 {
@@ -302,7 +302,7 @@ while i < len(workers) {
 
 Канали — для спілкування МІЖ воркерами (а не лише "запустив і забрав
 результат наприкінці"):
-```arx
+```nx
 var ch = newChannel()
 
 func producer(c) {
@@ -330,7 +330,7 @@ func main() {
 той самий "shared nothing" принцип, що й у `spawn()`.
 
 ### Графіка (2D і 3D)
-```arx
+```nx
 var canvas = createCanvas("Гра", 400, 300)
 var frame = 0
 while frame < 60 {
@@ -366,13 +366,13 @@ closeCanvas(canvas)
 - `toJson(v)`, `fromJson(str)` - серіалізація в JSON і назад
 - `sleep(ms)` - пауза виконання
 - `exit(код)` - негайно завершує процес із заданим кодом виходу (рядки коду після exit() не виконуються) - для CI/скриптів, де потрібен конкретний код (0 успіх, інший - провал), без штучного throw (той завжди дає код 1)
-- `gc_stats()` - структура `{allocated, limit, bytesEstimate}` з обліком ArxLang-виділень (масиви/структури/мапи) поточного запуску; `gc_collect()` - форсує збирання сміття .NET і оновлює оцінку пам'яті; `gc_limit(n)` - встановлює ліміт кількості виділень, перевищення кидає помилку (можна зловити через `try/catch`, або задати ззовні через `ARX_GC_MAX_OBJECTS`)
-- `dbOpen(path)` - відкриває (чи створює) персистентну KV-базу [ArxDb](https://github.com/Faneraiy14/ArxDb) в теці за шляхом `path`; `dbSet(db,k,v)`, `dbGet(db,k)` (рядок або `null`), `dbHas(db,k)`, `dbDelete(db,k)` - значення в v1 лише рядки; `dbKeys(db,prefix?)` - масив ключів (опційно за префіксом); `dbCount(db)`; `dbCheckpoint(db)` - примусова компакція; `dbClose(db)` - закриває базу (компактує WAL, якщо він непорожній)
+- `gc_stats()` - структура `{allocated, limit, bytesEstimate}` з обліком NyxilumLang-виділень (масиви/структури/мапи) поточного запуску; `gc_collect()` - форсує збирання сміття .NET і оновлює оцінку пам'яті; `gc_limit(n)` - встановлює ліміт кількості виділень, перевищення кидає помилку (можна зловити через `try/catch`, або задати ззовні через `NX_GC_MAX_OBJECTS`)
+- `dbOpen(path)` - відкриває (чи створює) персистентну KV-базу [NyxilumDb](https://github.com/Faneraiy14/NyxilumDb) в теці за шляхом `path`; `dbSet(db,k,v)`, `dbGet(db,k)` (рядок або `null`), `dbHas(db,k)`, `dbDelete(db,k)` - значення в v1 лише рядки; `dbKeys(db,prefix?)` - масив ключів (опційно за префіксом); `dbCount(db)`; `dbCheckpoint(db)` - примусова компакція; `dbClose(db)` - закриває базу (компактує WAL, якщо він непорожній)
 - `createCanvas(title,w,h)`, `clearCanvas`, `drawRect`, `drawCircle`, `drawLine`, `drawText`, `presentCanvas`, `canvasShouldClose`, `closeCanvas` - 2D графіка
 - `project3D(canvas,x,y,z,camDistance)` - проекція 3D-точки в 2D для рендеру 3D-сцен
 - `guiWindow(title,w,h)`, `guiLabel(text,x,y,w,h)`, `guiButton(text,x,y,w,h)`, `guiTextBox(x,y,w,h)` - вікна на Windows Forms
 - `guiAdd(parent,child)` - додати елемент у вікно; `guiSetText(control,text)`/`guiGetText(control)` - змінити/прочитати текст
-- `guiOnAction(button,fn)` - викликати ArxLang-функцію `fn` при кліку (звичайну функцію-значення, як у `sort(arr,cmp)` — без дужок, не рядок з іменем)
+- `guiOnAction(button,fn)` - викликати NyxilumLang-функцію `fn` при кліку (звичайну функцію-значення, як у `sort(arr,cmp)` — без дужок, не рядок з іменем)
 - `guiShow(win)` - показати вікно (блокує, доки вікно не закриють)
 - `isKeyDown(key)`, `isMouseDown(canvas)`, `getMouseX/Y(canvas)` - ввід для вікна
 - `randomInt(min,max)`, `randomDouble(min,max)`, `now()`, `today()`, `timestamp()` - утиліти
@@ -386,10 +386,10 @@ closeCanvas(canvas)
 - `guiWindow(title, w, h)`, `guiButton(text, x, y, w, h)`, `guiShow(win)` - GUI (експериментально)
 
 ## Як запустити
-Після встановлення (див. INSTALL.md) команда `arx` доступна на будь-якій
+Після встановлення (див. INSTALL.md) команда `nx` доступна на будь-якій
 платформі (Windows/Linux/Mac) — передайте шлях до файлу:
-`arx program.arx`
+`nx program.nx`
 
 Інші команди:
-- `arx format program.arx` - вивести відформатований код
-- `arx lint program.arx` - перевірити код на типові помилки (невикористані змінні, задовгі рядки, порожні блоки)
+- `nx format program.nx` - вивести відформатований код
+- `nx lint program.nx` - перевірити код на типові помилки (невикористані змінні, задовгі рядки, порожні блоки)

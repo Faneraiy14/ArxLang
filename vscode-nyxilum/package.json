@@ -1,0 +1,43 @@
+{
+  "name": "nyxilum",
+  "displayName": "Nyxilum",
+  "description": "Підсвічування синтаксису й автодоповнення для .nx файлів (NyxilumLang)",
+  "version": "0.3.0",
+  "publisher": "Faneraiy14",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Faneraiy14/NyxilumLang.git"
+  },
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "main": "./extension.js",
+  "activationEvents": [
+    "onLanguage:nyxilum"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "nyxilum",
+        "aliases": ["Nyxilum", "NyxilumLang", "nyxilum"],
+        "extensions": [".nx"],
+        "icon": {
+          "light": "./icons/nx-icon.svg",
+          "dark": "./icons/nx-icon.svg"
+        },
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "nyxilum",
+        "scopeName": "source.nyxilum",
+        "path": "./syntaxes/nyxilum.tmLanguage.json"
+      }
+    ]
+  }
+}

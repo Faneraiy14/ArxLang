@@ -1,0 +1,34 @@
+// lib/http_client.nx — зручна обгортка над нативними httpGet/httpPost/
+// httpRequest у дусі Python-бібліотеки requests: сам серіалізує/десеріалізує
+// JSON, щоб виклик коду не возився з toJson/fromJson щоразу вручну.
+
+func getJson(url) {
+    return fromJson(httpGet(url))
+}
+
+func postJson(url, data) {
+    var res = httpRequest(url, "POST", toJson(data))
+    return fromJson(mapGet(res, "body"))
+}
+
+// method - довільний HTTP-метод ("PUT", "DELETE", "PATCH" тощо);
+// data - мапа/масив для тіла запиту, або null, якщо тіла нема.
+func requestJson(url, method, data) {
+    var body = ""
+    if !isNull(data) {
+        body = toJson(data)
+    }
+    var res = httpRequest(url, method, body)
+    return fromJson(mapGet(res, "body"))
+}
+
+// повертає лише код статусу (number) - зручно, коли тіло відповіді
+// не потрібне, а важливо лише чи запит вдався.
+func requestStatus(url, method, data) {
+    var body = ""
+    if !isNull(data) {
+        body = toJson(data)
+    }
+    var res = httpRequest(url, method, body)
+    return mapGet(res, "status")
+}

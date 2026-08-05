@@ -1,0 +1,24 @@
+import "../lib/strings.nx" { capitalize, titleCase, isBlank, isEmpty, padLeft, padRight, countOccurrences }
+import "../lib/testing.nx" { assertEqual, assertTrue, assertFalse }
+
+func main() {
+    assertEqual(capitalize("привіт"), "Привіт", "capitalize має підняти першу літеру")
+    assertEqual(capitalize(""), "", "capitalize на пустому рядку не має падати")
+
+    assertEqual(titleCase("добрий ранок світе"), "Добрий Ранок Світе", "titleCase кожне слово")
+
+    assertTrue(isBlank("   "), "рядок з пробілів має бути blank")
+    assertFalse(isBlank("х"), "непорожній рядок не має бути blank")
+    assertTrue(isEmpty(""), "порожній рядок має бути empty")
+    assertFalse(isEmpty("х"), "непорожній рядок не має бути empty")
+
+    assertEqual(padLeft("5", 3, "0"), "005", "padLeft доповнює зліва")
+    assertEqual(padRight("5", 3, "0"), "500", "padRight доповнює справа")
+    assertEqual(padLeft("500", 3, "0"), "500", "padLeft не чіпає рядок не коротший за length")
+
+    assertEqual(countOccurrences("ababab", "ab"), 3, "countOccurrences рахує непересічні входження")
+    assertEqual(countOccurrences("aaaa", "aa"), 2, "countOccurrences на перекритті рахує непересічно")
+    assertEqual(countOccurrences("hello", "z"), 0, "countOccurrences без збігів дає 0")
+
+    print("усі перевірки lib/strings.nx пройдено")
+}

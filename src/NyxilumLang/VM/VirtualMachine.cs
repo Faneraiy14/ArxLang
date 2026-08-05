@@ -15,6 +15,17 @@ public class NxThrowException : Exception
     public NxThrowException(string message) : base(message) { }
 }
 
+// Позначає виняток, чий текст (номер рядка, traceback) уже повністю
+// сформований — верхній catch у Run()/RunFunction() НЕ повинен обгортати
+// його ще раз своїм префіксом. Без цього маркера помилка воркера
+// (RunFunction на ОКРЕМІЙ VM у spawn()), прокинута назовні через
+// workerJoin(), обгорталась би ВДРУГЕ зовнішнім Run() головного потоку —
+// подвійний "рядок N:" і задвоєний traceback навколо вже готового тексту.
+internal sealed class NxFormattedException : Exception
+{
+    public NxFormattedException(string message, Exception inner) : base(message, inner) { }
+}
+
 public class VirtualMachine
 {
     private readonly byte[] _code;
@@ -562,17 +573,79 @@ public class VirtualMachine
     [ThreadStatic]
     public static VirtualMachine? Current;
 
-    // Останній запис у _lineMap з Offset <= поточного _ip. _lineMap
+    // Останній запис у _lineMap з Offset <= заданого ip. _lineMap
     // відсортована за зростанням Offset (компілюється послідовно), тому
     // проходимо з кінця й беремо перший підходящий — просте О(n), для
     // помилки виконання (не гарячий шлях) цього достатньо.
-    private int CurrentLine()
+    private int LineAt(int ip)
     {
         for (int i = _lineMap.Count - 1; i >= 0; i--)
         {
-            if (_lineMap[i].Offset <= _ip) return _lineMap[i].Line;
+            if (_lineMap[i].Offset <= ip) return _lineMap[i].Line;
         }
         return -1;
+    }
+
+    private int CurrentLine() => LineAt(_ip);
+
+    // Функція, чиє тіло містить заданий ip — та з _functionAddresses з
+    // НАЙБІЛЬШОЮ адресою, що все ще <= ip (компілятор кладе тіла функцій
+    // послідовно одне за одним, тож "останній старт перед ip" і є
+    // функцією, всередині якої ми зараз). null-адреса (ip до першої
+    // функції, тобто код верхнього рівня файлу) — не помилка, а
+    // "<основний код>".
+    private string FunctionNameAt(int ip)
+    {
+        string? best = null;
+        int bestAddr = -1;
+        foreach (var (name, addr) in _functionAddresses)
+        {
+            if (addr <= ip && addr > bestAddr)
+            {
+                bestAddr = addr;
+                best = name;
+            }
+        }
+        return best ?? "<основний код>";
+    }
+
+    // Traceback у стилі Python: найглибший виклик (де стались помилка)
+    // — останній рядок. _callStack зберігає адреси ПОВЕРНЕННЯ (позиція
+    // одразу після CALL) — вони лежать усередині функції-ВИКЛИКАЧА, тому
+    // FunctionNameAt/LineAt на кожному записі дають "хто й де викликав
+    // наступний рівень вкладеності". Порожній рядок, якщо виклик один
+    // (немає сенсу показувати traceback з одного кадру — досить "рядок N:").
+    private string BuildTraceback()
+    {
+        if (_callStack.Count == 0) return "";
+
+        var frames = new List<(string Name, int Line)> { (FunctionNameAt(_ip), LineAt(_ip)) };
+        foreach (var returnIp in _callStack)
+            frames.Add((FunctionNameAt(returnIp), LineAt(returnIp)));
+
+        // Line == -1 — синтетичний маркер глибини (RunFunction/
+        // InvokeFunctionValue штовхають поточний _ip у _callStack ПЕРЕД
+        // переходом у функцію; для щойно створеної VM воркера це _ip=0,
+        // до будь-якого реального рядка) — не справжній сайт виклику.
+        frames.RemoveAll(f => f.Line <= 0);
+
+        // Дедублікація суміжних однакових кадрів: авто-виклик main() з
+        // синтетичного коду верхнього рівня (компілятор сам додає CALL
+        // main наприкінці, якщо скрипт — самі функції без top-level коду)
+        // не має власної адреси-межі "де закінчується main і починається
+        // верхній рівень" — FunctionNameAt тоді приписує обидва тому самому
+        // "main", і без дедублікації кадр показувався б двічі поспіль.
+        var deduped = new List<(string Name, int Line)>();
+        foreach (var f in frames)
+            if (deduped.Count == 0 || deduped[^1] != f) deduped.Add(f);
+        frames = deduped;
+
+        if (frames.Count <= 1) return "";
+
+        var sb = new System.Text.StringBuilder("Traceback (найглибший виклик — останній):\n");
+        for (int i = frames.Count - 1; i >= 0; i--)
+            sb.Append($"  рядок {frames[i].Line}, у {frames[i].Name}()\n");
+        return sb.ToString();
     }
 
     public void Run()
@@ -589,13 +662,17 @@ public class VirtualMachine
             }
             // _handlers.Count == 0 тут означає "жоден NyxilumLang try/catch це
             // не зловить" — той самий виняток однаково вилетить з Run()
-            // необробленим, тож маємо єдиний шанс додати номер рядка,
-            // перш ніж повідомлення дійде до Nx.cs як "Runtime Error".
+            // необробленим, тож маємо єдиний шанс додати номер рядка й
+            // traceback, перш ніж повідомлення дійде до Nx.cs як "Runtime
+            // Error". Traceback НЕ додається до значення try/catch зловленої
+            // помилки (див. UnwindToHandler нижче) — лише сюди, до того, що
+            // реально впаде необробленим і покажеться користувачу.
             catch (Exception ex) when (_handlers.Count == 0)
             {
+                if (ex is NxFormattedException) throw;
                 int line = CurrentLine();
                 string prefix = line > 0 ? $"рядок {line}: " : "";
-                throw new Exception(prefix + ex.Message, ex);
+                throw new NxFormattedException(BuildTraceback() + prefix + ex.Message, ex);
             }
         }
     }
@@ -663,9 +740,10 @@ public class VirtualMachine
             }
             catch (Exception ex) when (_handlers.Count == 0)
             {
+                if (ex is NxFormattedException) throw;
                 int line = CurrentLine();
                 string prefix = line > 0 ? $"рядок {line}: " : "";
-                throw new Exception(prefix + ex.Message, ex);
+                throw new NxFormattedException(BuildTraceback() + prefix + ex.Message, ex);
             }
         }
 

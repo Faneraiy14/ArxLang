@@ -28,9 +28,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Сестринський проєкт (окремий репозиторій, той самий батько
-         All-Arx) — embedded KV-база з WAL, підключена як стандартна
-         бібліотека db*-функцій (dbOpen/dbGet/dbSet/...). -->
-    <ProjectReference Include="..\..\..\ArxDb\src\ArxDb\ArxDb.csproj" />
+    <!-- Сестринський проєкт (окремий репозиторій) — embedded KV-база
+         з WAL, підключена як стандартна бібліотека db*-функцій
+         (dbOpen/dbGet/dbSet/...). -->
+    <ProjectReference Include="..\..\..\NyxilumDb\src\NyxilumDb\NyxilumDb.csproj" />
   </ItemGroup>
 </Project>

@@ -17,9 +17,8 @@ jobs:
         with:
           path: NyxilumLang
 
-      # NyxilumLang.csproj посилається на ArxDb (сестринський репозиторій —
-      # ЩЕ НЕ перейменований на NyxilumDb, дивись окрему задачу) через
-      # ProjectReference з ВІДНОСНИМ шляхом "../../../ArxDb/...",
+      # NyxilumLang.csproj посилається на NyxilumDb (сестринський репозиторій)
+      # через ProjectReference з ВІДНОСНИМ шляхом "../../../NyxilumDb/...",
       # розрахованим на те, що обидва репо лежать поруч на диску (як у
       # локального розробника). Явний path: на ОБОХ checkout-кроках —
       # єдиний спосіб відтворити це на раннері: тоді обидва репо стають
@@ -27,8 +26,8 @@ jobs:
       # інше (звідси "../../../" рахує рівно 3 рівні вгору коректно).
       - uses: actions/checkout@v4
         with:
-          repository: Faneraiy14/ArxDb
-          path: ArxDb
+          repository: Faneraiy14/NyxilumDb
+          path: NyxilumDb
 
       - uses: actions/setup-dotnet@v4
         with:
@@ -62,8 +61,8 @@ jobs:
 
       - uses: actions/checkout@v4
         with:
-          repository: Faneraiy14/ArxDb
-          path: ArxDb
+          repository: Faneraiy14/NyxilumDb
+          path: NyxilumDb
 
       - uses: actions/setup-dotnet@v4
         with:

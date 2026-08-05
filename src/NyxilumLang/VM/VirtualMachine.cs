@@ -1,6 +1,6 @@
 using NyxilumLang.Compiler;
 using NyxilumLang.Runtime;
-using ArxDbLib = ArxDb.ArxDb;
+using NyxilumDbLib = NyxilumDb.NyxilumDb;
 #if WINDOWS
 using System.Windows.Forms;
 using System.Drawing;
@@ -138,7 +138,7 @@ public class VirtualMachine
             List<object> => "array",
             NxMap => "map",
             NxFunctionRef => "function",
-            ArxDbLib => "database",
+            NyxilumDbLib => "database",
             Dictionary<string, object> => "struct",
             string => "string",
             bool => "bool",
@@ -172,32 +172,32 @@ public class VirtualMachine
         _nativeFunctions["gc_collect"] = args => { NxGc.Instance.Collect(); return null; };
         _nativeFunctions["gc_limit"] = args => { NxGc.Instance.SetLimit((long)PopNumVal(args[0])); return null; };
 
-        // ArxDb: embedded KV-база з WAL (окремий сестринський репозиторій,
-        // https://github.com/Faneraiy14/ArxDb). Інстанс ArxDbLib
+        // NyxilumDb: embedded KV-база з WAL (окремий сестринський репозиторій,
+        // https://github.com/Faneraiy14/NyxilumDb). Інстанс NyxilumDbLib
         // повертається/приймається як звичайне NyxilumLang-значення — так
         // само, як NxMap. Значення в v1 — лише рядки (UTF8-кодування
         // на Set, декодування на Get): у NyxilumLang немає власного типу
         // "байтовий масив", а більшість реальних застосунків мови й так
         // оперує рядками/JSON, тож розширювати модель значень заради
         // сирих байтів у першій версії не варто.
-        _nativeFunctions["dbOpen"] = args => ArxDbLib.Open(args[0]?.ToString() ?? "");
-        _nativeFunctions["dbClose"] = args => { ((ArxDbLib)args[0]).Dispose(); return null; };
+        _nativeFunctions["dbOpen"] = args => NyxilumDbLib.Open(args[0]?.ToString() ?? "");
+        _nativeFunctions["dbClose"] = args => { ((NyxilumDbLib)args[0]).Dispose(); return null; };
         _nativeFunctions["dbSet"] = args => {
-            ((ArxDbLib)args[0]).Set(args[1]?.ToString() ?? "", System.Text.Encoding.UTF8.GetBytes(args[2]?.ToString() ?? ""));
+            ((NyxilumDbLib)args[0]).Set(args[1]?.ToString() ?? "", System.Text.Encoding.UTF8.GetBytes(args[2]?.ToString() ?? ""));
             return null;
         };
         _nativeFunctions["dbGet"] = args => {
-            var bytes = ((ArxDbLib)args[0]).Get(args[1]?.ToString() ?? "");
+            var bytes = ((NyxilumDbLib)args[0]).Get(args[1]?.ToString() ?? "");
             return bytes == null ? null : System.Text.Encoding.UTF8.GetString(bytes);
         };
-        _nativeFunctions["dbHas"] = args => ((ArxDbLib)args[0]).ContainsKey(args[1]?.ToString() ?? "");
-        _nativeFunctions["dbDelete"] = args => ((ArxDbLib)args[0]).Delete(args[1]?.ToString() ?? "");
+        _nativeFunctions["dbHas"] = args => ((NyxilumDbLib)args[0]).ContainsKey(args[1]?.ToString() ?? "");
+        _nativeFunctions["dbDelete"] = args => ((NyxilumDbLib)args[0]).Delete(args[1]?.ToString() ?? "");
         _nativeFunctions["dbKeys"] = args => {
             var prefix = args.Length > 1 ? args[1]?.ToString() : null;
-            return ((ArxDbLib)args[0]).Keys(prefix).Select(k => (object)k).ToList();
+            return ((NyxilumDbLib)args[0]).Keys(prefix).Select(k => (object)k).ToList();
         };
-        _nativeFunctions["dbCount"] = args => (double)((ArxDbLib)args[0]).Count;
-        _nativeFunctions["dbCheckpoint"] = args => { ((ArxDbLib)args[0]).Checkpoint(); return null; };
+        _nativeFunctions["dbCount"] = args => (double)((NyxilumDbLib)args[0]).Count;
+        _nativeFunctions["dbCheckpoint"] = args => { ((NyxilumDbLib)args[0]).Checkpoint(); return null; };
         _nativeFunctions["mapSet"] = args => {
             var map = (NxMap)args[0];
             map.Entries[args[1]] = args[2];

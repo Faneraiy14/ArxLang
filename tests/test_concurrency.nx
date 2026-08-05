@@ -67,5 +67,22 @@ func main() {
     }
     assertEqual(workerJoin(spawn(outer)), 42, "воркер може сам спавнити воркера (вкладений spawn)")
 
+    // workerJoin з тайм-аутом
+    var slow = func() {
+        sleep(500)
+        return "готово"
+    }
+    var w3 = spawn(slow)
+    assertThrows(func() {
+        workerJoin(w3, 50)
+    }, "workerJoin з занадто малим тайм-аутом кидає помилку, не блокує вічно")
+    sleep(600)
+    assertEqual(workerJoin(w3, 100), "готово", "той самий воркер: повторний workerJoin після завершення вже успішний")
+
+    // Воркер, що легітимно повертає null, не повинен плутатись із тайм-аутом
+    var returnsNull = func() { return null }
+    var w4 = spawn(returnsNull)
+    assertTrue(isNull(workerJoin(w4, 1000)), "воркер, що повертає null, відрізняється від тайм-ауту (не кидає помилку)")
+
     print("усі перевірки конкурентності пройдено")
 }

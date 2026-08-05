@@ -81,10 +81,34 @@ public static class ConcurrencyModule
         return worker;
     }
 
+    // workerJoin(w)            — блокує без обмеження часу
+    // workerJoin(w, timeoutMs) — кидає помилку, якщо воркер не встиг за час
+    //
+    // На відміну від channelReceive (де тайм-аут повертає null — "нічого
+    // не прийшло", цілком нормальний результат очікування), тут null НЕ
+    // годиться як сигнал тайм-ауту: воркер цілком міг сам легітимно
+    // повернути null як свій результат. Тому — виняток, а не сентинел-
+    // значення, яке довелось би плутати зі справжнім результатом.
+    //
+    // Сам воркер при тайм-ауті НЕ зупиняється (потоки .NET не можна
+    // безпечно "вбити" ззовні без ризику лишити VM у зіпсованому стані
+    // посеред інструкції) — просто перестаємо його чекати. Join можна
+    // викликати повторно (напр. у циклі опитування): Thread.Join()
+    // ідемпотентний — на вже завершеному потоці повертається одразу.
     private static object? Join(object[] args)
     {
         var worker = (NxWorker)args[0];
-        worker.Thread.Join();
+        if (args.Length > 1)
+        {
+            int timeoutMs = Convert.ToInt32(args[1]);
+            if (!worker.Thread.Join(timeoutMs))
+                throw new Exception($"workerJoin: тайм-аут {timeoutMs}мс — воркер ще не завершився (сам не зупинений, працює далі у фоні)");
+        }
+        else
+        {
+            worker.Thread.Join();
+        }
+
         if (worker.Error != null)
             throw worker.Error;
         return worker.Result;

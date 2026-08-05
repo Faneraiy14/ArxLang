@@ -119,11 +119,17 @@ public static class GraphicsModule
             return null;
         };
 
+        // presentCanvas/closeCanvas — на відміну від draw*/clear* (ті лише
+        // малюють у власний Bitmap canvas.Buffer, не чіпаючи Control), тут
+        // реальні виклики на Form/PictureBox (Invalidate/DoEvents/Close) —
+        // саме ті, що вимагають виконання з того самого потоку, що створив
+        // вікно. GuiThreadGuard ловить виклик з воркера (spawn) одразу.
         registry["presentCanvas"] = args =>
         {
             var canvas = (NxCanvas)args[0];
             if (!canvas.Form.IsDisposed)
             {
+                GuiThreadGuard.Ensure(canvas.Form);
                 canvas.Surface.Invalidate();
                 Application.DoEvents();
             }
@@ -135,7 +141,11 @@ public static class GraphicsModule
         registry["closeCanvas"] = args =>
         {
             var canvas = (NxCanvas)args[0];
-            if (!canvas.Form.IsDisposed) canvas.Form.Close();
+            if (!canvas.Form.IsDisposed)
+            {
+                GuiThreadGuard.Ensure(canvas.Form);
+                canvas.Form.Close();
+            }
             return null;
         };
 

@@ -468,15 +468,21 @@ public class VirtualMachine
         _nativeFunctions["guiAdd"] = args => {
             var parent = (Control)args[0];
             var child = (Control)args[1];
+            GuiThreadGuard.Ensure(parent);
             parent.Controls.Add(child);
             return null;
         };
         _nativeFunctions["guiSetText"] = args => {
             var control = (Control)args[0];
+            GuiThreadGuard.Ensure(control);
             control.Text = args[1]?.ToString() ?? "";
             return null;
         };
-        _nativeFunctions["guiGetText"] = args => ((Control)args[0]).Text;
+        _nativeFunctions["guiGetText"] = args => {
+            var control = (Control)args[0];
+            GuiThreadGuard.Ensure(control);
+            return control.Text;
+        };
         _nativeFunctions["guiOnAction"] = args => {
             // Другий аргумент — функція-ЗНАЧЕННЯ (як cmp у sort(arr,cmp)),
             // не рядок з іменем. Раніше клік просто нічого не робив —
@@ -485,6 +491,7 @@ public class VirtualMachine
             var control = (Control)args[0];
             var funcRef = (NxFunctionRef)args[1];
             var vm = Current!;
+            GuiThreadGuard.Ensure(control);
 
             if (control is Button btn) {
                 btn.Click += (s, e) => vm.InvokeFunctionValue(funcRef, Array.Empty<object>());
@@ -493,6 +500,7 @@ public class VirtualMachine
         };
         _nativeFunctions["guiShow"] = args => {
             var form = (Form)args[0];
+            GuiThreadGuard.Ensure(form);
             Application.Run(form);
             return null;
         };

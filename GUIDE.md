@@ -347,6 +347,27 @@ func main() {
 Значення, що проходять через `channelSend`, теж глибоко копіюються —
 той самий "shared nothing" принцип, що й у `spawn()`.
 
+**GUI/графіка з воркера.** `guiSetText`/`guiAdd`/`guiShow`/`presentCanvas`/
+`closeCanvas` та подібні (усе, що чіпає вже створене вікно) можна
+викликати лише з головного потоку — Windows Forms цього вимагає. Виклик
+з воркера кидає чітку помилку, а не крашить чи псує стан вікна. Щоб
+воркер вплинув на GUI — хай поверне результат через `workerJoin` чи
+надішле каналом, а сам GUI онови з головного потоку:
+
+```nx
+func heavyCalculation() {
+    // ... довгі обчислення без GUI ...
+    return 42
+}
+
+func main() {
+    var label = guiLabel("Рахую...", 10, 10, 200, 30)
+    var w = spawn(heavyCalculation)
+    var result = workerJoin(w)     // головний потік чекає й забирає результат
+    guiSetText(label, toString(result))  // GUI оновлюється тут, з головного потоку
+}
+```
+
 ### Графіка (2D і 3D)
 ```nx
 var canvas = createCanvas("Гра", 400, 300)

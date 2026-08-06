@@ -1,8 +1,8 @@
 {
   "name": "nyxilum",
   "displayName": "Nyxilum",
-  "description": "Підсвічування синтаксису й автодоповнення для .nx файлів (NyxilumLang)",
-  "version": "0.3.0",
+  "description": "Підсвічування синтаксису, автодоповнення й діагностика синтаксичних помилок для .nx файлів (NyxilumLang)",
+  "version": "0.4.0",
   "publisher": "Faneraiy14",
   "license": "MIT",
   "repository": {

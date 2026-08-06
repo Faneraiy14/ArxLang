@@ -41,6 +41,12 @@ public class Nx
             return;
         }
 
+        if (command == "check" && args.Length > 1)
+        {
+            RunCheck(args[1]);
+            return;
+        }
+
         if (command == "install")
         {
             RunInstall(args.Length > 1 ? args[1] : null);
@@ -148,6 +154,39 @@ public class Nx
         string code = File.ReadAllText(path, Encoding.UTF8);
         var linter = new Linter();
         linter.Lint(code);
+    }
+
+    // "nx check файл.nx" — лише Lexer+Parser, БЕЗ Compiler і БЕЗ VM.Run().
+    // На відміну від "nx файл.nx" (реально виконує код — небезпечно для
+    // перевірки "на льоту" в редакторі, поки текст ще не дописаний: може
+    // писати файли, лізти в мережу, зациклитись) і "nx format"/"nx lint"
+    // (жоден не будує справжній AST — format лише форматує вже валідний
+    // текст, lint працює по токенах поверхнево), check — єдиний спосіб
+    // дізнатись "чи взагалі валідний синтаксис" без побічних ефектів.
+    // Не резолвить import (ModuleResolver) — це вже семантика, не синтаксис,
+    // і для незбереженого/тимчасового буфера шлях однаково не мав би сенсу.
+    private static void RunCheck(string path)
+    {
+        if (!File.Exists(path))
+        {
+            Console.WriteLine($"Error: Cannot find file '{path}'");
+            Environment.Exit(1);
+            return;
+        }
+        try
+        {
+            string code = File.ReadAllText(path, Encoding.UTF8);
+            var lexer = new Lexer(code);
+            var tokens = lexer.Tokenize();
+            var parser = new Parser(tokens);
+            parser.ParseProgram();
+            Console.WriteLine("OK");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Parse Error: {ex.Message}");
+            Environment.Exit(1);
+        }
     }
 
     private static void RunFile(string path)

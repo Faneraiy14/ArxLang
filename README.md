@@ -71,6 +71,7 @@ nx myprogram.nx
 | Замикання | `var f = func() { return count }` |
 | Функції як значення | `var op = sqrt`, `sort(arr, cmp)` |
 | Структури й методи | `struct Point { x, y }`, `func Point.len() {...}` |
+| Успадкування | `struct Dog extends Animal { ... }`, `super.method(...)`, поліморфізм за замовчуванням |
 | Мапи | `newMap()`, `mapSet`, `mapGet`, `mapKeys` |
 | Масиви | `[1, 2, 3]`, `arr[0]`, `append(arr, 4)` |
 | Цикли | `for i in 0..10`, `for x in arr`, `while` |

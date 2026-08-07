@@ -12,7 +12,7 @@ public class Lexer
         "func", "var", "if", "else", "while", "for", "return",
         "break", "continue",
         "true", "false", "null", "print", "in",
-        "struct", "self", "import",
+        "struct", "self", "import", "extends", "super",
         "try", "catch", "throw",
         "readLine", "readInt", "readDouble",
         "readFile", "writeFile", "appendFile", "fileExists",

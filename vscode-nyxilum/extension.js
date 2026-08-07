@@ -16,7 +16,7 @@ const path = require('path');
 const KEYWORDS = [
     'func', 'var', 'if', 'else', 'while', 'for', 'return',
     'break', 'continue', 'true', 'false', 'null', 'in',
-    'struct', 'self', 'import', 'try', 'catch', 'throw',
+    'struct', 'self', 'import', 'try', 'catch', 'throw', 'extends', 'super',
 ];
 
 // Продубльовано з src/NyxilumLang/Compiler/Compiler.cs _builtins.

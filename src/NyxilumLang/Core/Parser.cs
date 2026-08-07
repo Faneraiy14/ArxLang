@@ -129,6 +129,15 @@ public class Parser
     {
         Advance();
         var name = Consume(TokenType.Identifier, "Очікується назва структури");
+
+        string? parentName = null;
+        if (Peek().Type == TokenType.Keyword && Peek().Value == "extends")
+        {
+            Advance();
+            var parent = Consume(TokenType.Identifier, "Очікується назва батьківської структури після 'extends'");
+            parentName = parent.Value;
+        }
+
         Consume(TokenType.Punctuation, "Очікується '{'");
         var fields = new List<StructField>();
         var methods = new List<FunctionDeclaration>();
@@ -156,7 +165,7 @@ public class Parser
             }
         }
         Consume(TokenType.Punctuation, "Очікується '}'");
-        return new StructDeclaration(name.Value, fields, methods);
+        return new StructDeclaration(name.Value, fields, methods, parentName);
     }
 
     private FunctionDeclaration ParseFunctionDeclaration(string? parentStructName = null)

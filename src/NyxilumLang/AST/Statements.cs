@@ -133,14 +133,16 @@ public class FunctionParameter
 public class StructDeclaration : StatementNode
 {
     public string Name { get; }
+    public string? ParentName { get; }
     public List<StructField> Fields { get; }
     public List<FunctionDeclaration> Methods { get; }
-    public StructDeclaration(string name, List<StructField> fields, List<FunctionDeclaration> methods)
-    { Name = name; Fields = fields; Methods = methods; }
+    public StructDeclaration(string name, List<StructField> fields, List<FunctionDeclaration> methods, string? parentName = null)
+    { Name = name; Fields = fields; Methods = methods; ParentName = parentName; }
     public override string ToString(int indent = 0)
     {
         var pad = new string(' ', indent);
-        var result = $"{pad}Struct: {Name}\n";
+        var extendsStr = ParentName != null ? $" extends {ParentName}" : "";
+        var result = $"{pad}Struct: {Name}{extendsStr}\n";
         foreach (var field in Fields)
             result += $"{pad}  {field.Name}: {field.Type}\n";
         foreach (var method in Methods)

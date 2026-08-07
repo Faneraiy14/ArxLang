@@ -1,0 +1,49 @@
+// Успадкування структур: extends, перевизначення методів, поліморфізм
+// (диспетчеризація за РЕАЛЬНИМ типом self, а не оголошеним) і super.
+
+struct Animal {
+    name: string
+
+    func speak() {
+        print(self.name + " видає якийсь звук.")
+    }
+
+    // Викликається з self всередині БАТЬКІВСЬКОГО методу — саме тут
+    // видно поліморфізм: introduce() статично живе лише в Animal, але
+    // self.speak() всередині неї має знайти НАЙБІЛЬШ похідне
+    // перевизначення (Dog.speak/Cat.speak), а не Animal.speak.
+    func introduce() {
+        print("Це " + self.name + ".")
+        self.speak()
+    }
+}
+
+struct Dog extends Animal {
+    func speak() {
+        super.speak()
+        print(self.name + " гавкає: Гав!")
+    }
+}
+
+struct Cat extends Animal {
+    func speak() {
+        print(self.name + " нявкає: Няв!")
+    }
+}
+
+func main() {
+    print("=== УСПАДКУВАННЯ ===")
+
+    var generic = Animal { name: "Істота" }
+    var dog = Dog { name: "Рекс" }
+    var cat = Cat { name: "Мурка" }
+
+    generic.speak()
+    dog.speak()
+    cat.speak()
+
+    print("=== ПОЛІМОРФІЗМ (виклик через метод-предка) ===")
+    generic.introduce()
+    dog.introduce()
+    cat.introduce()
+}

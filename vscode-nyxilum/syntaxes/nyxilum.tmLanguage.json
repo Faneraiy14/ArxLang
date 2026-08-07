@@ -46,7 +46,7 @@
       "patterns": [
         {
           "name": "keyword.control.nyxilum",
-          "match": "\\b(if|else|while|for|in|return|break|continue|try|catch|throw|import)\\b"
+          "match": "\\b(if|else|while|for|in|return|break|continue|try|catch|throw|import|extends)\\b"
         },
         {
           "name": "storage.type.nyxilum",
@@ -54,7 +54,7 @@
         },
         {
           "name": "variable.language.self.nyxilum",
-          "match": "\\bself\\b"
+          "match": "\\b(self|super)\\b"
         }
       ]
     },

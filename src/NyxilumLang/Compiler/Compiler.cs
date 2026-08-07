@@ -10,6 +10,20 @@ public class Compiler
     private readonly Dictionary<string, int> _functions = new();
     private int _varCounter;
 
+    // Усі структури програми за іменем — потрібно і для проставлення
+    // аліасів успадкованих методів (ResolveInheritance), і для резолвингу
+    // super.method() (ResolveMethodOwnerInChain), обидва - по AST, не по
+    // вже скомпільованому байткоду, тому порядок оголошення структур у
+    // файлі не має значення.
+    private readonly Dictionary<string, StructDeclaration> _structsByName = new();
+    // Батько СТРУКТУРИ, чий МЕТОД компілюється просто зараз (null - як тільки
+    // компілюється не метод, або метод структури без extends) - потрібен,
+    // щоб super.method() усередині нього резолвився статично, а не через
+    // CALL_METHOD (яка завжди диспетчерізує по runtime __type self, тобто
+    // знову викликала б НАЙБІЛЬШ похідне перевизначення - нескінченна
+    // рекурсія замість виклику батьківської реалізації).
+    private string? _currentStructParent;
+
     // Вкладена func (усередині іншої func) реєструється під УТОЧНЕНИМ
     // іменем "батько::дитина" (не голим "дитина"), інакше однакова назва
     // вкладеної функції у двох різних "батьках" тихо перезаписувала б
@@ -36,6 +50,81 @@ public class Compiler
         }
         return null;
     }
+
+    // extends на невідому структуру або цикл (A extends B extends A) мають
+    // впасти одразу й зрозуміло, а не мовчки зациклити компілятор пізніше
+    // в ResolveInheritance/ResolveMethodOwnerInChain.
+    private void ValidateInheritanceChains()
+    {
+        foreach (var s in _structsByName.Values)
+        {
+            var seen = new HashSet<string> { s.Name };
+            var current = s.ParentName;
+            while (current != null)
+            {
+                if (!_structsByName.ContainsKey(current))
+                    throw new Exception($"Структура '{s.Name}' успадковує невідому структуру '{current}' (extends {current})");
+                if (!seen.Add(current))
+                    throw new Exception($"Циклічне успадкування виявлено біля структури '{s.Name}'");
+                current = _structsByName[current].ParentName;
+            }
+        }
+    }
+
+    // Для кожної структури з extends: методи, які предок(и) оголошують, а
+    // сама структура (і жоден БЛИЖЧИЙ предок) не перевизначає, отримують
+    // аліас "Дитина.метод" на ту саму адресу. Завдяки цьому CALL_METHOD
+    // (яка завжди резолвить "{runtime __type self}.{метод}") знаходить
+    // успадкований метод так само, як власний, - а виклик перевизначеного
+    // методу з БАТЬКІВСЬКОГО коду (self.метод() усередині методу предка)
+    // автоматично дає поліморфізм: self має __type найбільш ПОХІДНОЇ
+    // структури, тому знайде саме її перевизначення, не батьківське.
+    private void ResolveInheritance()
+    {
+        foreach (var s in _structsByName.Values)
+        {
+            if (s.ParentName == null) continue;
+
+            var ownMethodNames = new HashSet<string>(s.Methods.Select(m => m.Name.Split('.')[^1]));
+            var current = s.ParentName;
+            while (current != null && _structsByName.TryGetValue(current, out var ancestor))
+            {
+                foreach (var m in ancestor.Methods)
+                {
+                    var shortName = m.Name.Split('.')[^1];
+                    if (ownMethodNames.Contains(shortName)) continue;
+                    string aliasKey = $"{s.Name}.{shortName}";
+                    // Уже проставлено ближчим предком у цьому ж проході - той має пріоритет.
+                    if (_functions.ContainsKey(aliasKey)) continue;
+                    string sourceKey = $"{current}.{shortName}";
+                    if (_functions.TryGetValue(sourceKey, out int addr))
+                    {
+                        _functions[aliasKey] = addr;
+                        _bytecode!.FunctionAddresses[aliasKey] = addr;
+                    }
+                }
+                current = ancestor.ParentName;
+            }
+        }
+    }
+
+    // super.method() має викликати САМЕ РЕАЛІЗАЦІЮ ланцюжка extends, що
+    // починається з startStructName (батько структури, чий метод зараз
+    // компілюється), а не найбільш похідне перевизначення - тому шукаємо
+    // по AST (де метод РЕАЛЬНО оголошений), а не через CALL_METHOD.
+    private string? ResolveMethodOwnerInChain(string? startStructName, string methodName)
+    {
+        var current = startStructName;
+        var seen = new HashSet<string>();
+        while (current != null && seen.Add(current) && _structsByName.TryGetValue(current, out var decl))
+        {
+            if (decl.Methods.Any(m => m.Name.Split('.')[^1] == methodName))
+                return current;
+            current = decl.ParentName;
+        }
+        return null;
+    }
+
     // ВИПРАВЛЕНО: функції компілюються по черзі, в порядку оголошення, тому
     // виклик функції, яка оголошена ПІЗНІШЕ у файлі (напр. main викликає
     // factorial, а factorial оголошена нижче), раніше отримував адресу -1
@@ -113,6 +202,10 @@ public class Compiler
         foreach (var name in _builtins)
             _functions[name] = -1;
 
+        foreach (var stmt in program.Statements)
+            if (stmt is StructDeclaration sd) _structsByName[sd.Name] = sd;
+        ValidateInheritanceChains();
+
         // Реєструємо всі функції (включаючи вкладені) перед компіляцією
         RegisterFunctions(program.Statements);
 
@@ -132,6 +225,14 @@ public class Compiler
 
         // Компілюємо тіла функцій
         CompileFunctions(program.Statements);
+
+        // Успадкування: структура з extends отримує доступ до методів
+        // предка, яких сама не перевизначає, - проставляємо для них
+        // аліаси "Дитина.метод" -> та сама адреса, що й "Батько.метод".
+        // Робиться ПІСЛЯ CompileFunctions (усі реальні адреси вже відомі),
+        // а не разом з RegisterFunctions - інакше алiас міг би вказати на
+        // ще не встановлену (-1) адресу предка, оголошеного нижче у файлі.
+        ResolveInheritance();
 
         PatchJump(skipJump);
 
@@ -221,6 +322,16 @@ public class Compiler
                 // нижче — знімається лише в самому кінці цієї гілки.
                 _funcNestingStack.Add(func.Name);
 
+                // Метод структури зареєстрований під іменем "Структура.метод"
+                // (див. Parser.ParseFunctionDeclaration) - саме з цього дефіса
+                // дізнаємось, чий це метод, і чи є в цієї структури extends,
+                // щоб super.method() усередині тіла резолвився правильно.
+                string? oldCurrentStructParent = _currentStructParent;
+                int dotIdx = func.Name.IndexOf('.');
+                _currentStructParent = dotIdx >= 0 && _structsByName.TryGetValue(func.Name[..dotIdx], out var ownerStruct)
+                    ? ownerStruct.ParentName
+                    : null;
+
                 // Зберігаємо поточний стан змінних для ізоляції функцій
                 var oldVars = new Dictionary<string, int>(_vars);
                 // ВИПРАВЛЕНО: кожна функція починає нумерацію слотів з нуля.
@@ -252,6 +363,7 @@ public class Compiler
                 // Відновлюємо змінні та лічильник слотів
                 _vars = oldVars;
                 _varCounter = oldVarCounter;
+                _currentStructParent = oldCurrentStructParent;
 
                 // RegisterFunctions() (вище) рекурсивно реєструє ІМ'Я кожної
                 // func-декларації, включно з вкладеними в тіло іншої функції
@@ -758,11 +870,34 @@ public class Compiler
                 }
                 break;
             case MethodCallExpression m:
-                CompileExpression(m.Object);
-                foreach (var arg in m.Arguments)
-                    CompileExpression(arg);
-                int methodConst = _bytecode!.AddConstant(m.MethodName);
-                _bytecode.Emit(OpCode.CALL_METHOD, methodConst, m.Arguments.Count);
+                if (m.Object is VariableExpression superVe && superVe.Name == "super")
+                {
+                    // super.method() навмисно НЕ йде через CALL_METHOD: та
+                    // диспетчерізує по runtime __type self, тобто знайшла б
+                    // знову НАЙБІЛЬШ похідне перевизначення - виклик самого
+                    // себе замість батьківської реалізації. Тому резолвимо
+                    // статично (як звичайний CALL) через ланцюжок extends.
+                    if (_currentStructParent == null)
+                        throw new Exception("'super' можна використовувати лише в методі структури, яка оголошена з 'extends'");
+                    if (!_vars.TryGetValue("self", out int selfSlot))
+                        throw new Exception("'super' можна використовувати лише всередині методу структури");
+                    string? owner = ResolveMethodOwnerInChain(_currentStructParent, m.MethodName);
+                    if (owner == null)
+                        throw new Exception($"Метод '{m.MethodName}' не знайдено в батьківських структурах ('{_currentStructParent}' і вище)");
+
+                    _bytecode!.Emit(OpCode.LOAD_VAR, selfSlot);
+                    foreach (var arg in m.Arguments) CompileExpression(arg);
+                    _bytecode.Emit(OpCode.CALL, 0);
+                    _pendingCalls.Add((_bytecode.Code.Count - 2, $"{owner}.{m.MethodName}"));
+                }
+                else
+                {
+                    CompileExpression(m.Object);
+                    foreach (var arg in m.Arguments)
+                        CompileExpression(arg);
+                    int methodConst = _bytecode!.AddConstant(m.MethodName);
+                    _bytecode.Emit(OpCode.CALL_METHOD, methodConst, m.Arguments.Count);
+                }
                 break;
             default:
                 throw new Exception($"Невідомий вираз: {expr.GetType()}");
